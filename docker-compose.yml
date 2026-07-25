@@ -1,0 +1,16 @@
+services:
+  frontend:
+    image: node:24-slim
+    container_name: wedding-gallery-frontend
+    restart: on-failure
+    user: "${UID}:${GID}"
+    ports:
+      - "3000:3000"
+    working_dir: /app
+    volumes:
+      - type: bind
+        source: ./frontend
+        target: /app
+    environment:
+      - HOME=/tmp
+    command: ["sh", "-c", "npm install && npm run dev"]
