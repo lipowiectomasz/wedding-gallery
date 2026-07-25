@@ -14,3 +14,24 @@ services:
     environment:
       - HOME=/tmp
     command: ["sh", "-c", "npm install && npm run dev"]
+
+  appwrite-cli:
+    image: node:24-slim
+    container_name: wedding-gallery-appwrite-cli
+    user: "${UID}:${GID}"
+    working_dir: /app
+    volumes:
+      - type: bind
+        source: ./appwrite/config
+        target: /app
+      - type: volume
+        source: appwrite-cli-home
+        target: /tmp
+    environment:
+      - HOME=/tmp
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    entrypoint: ["npx", "--yes", "appwrite-cli"]
+
+volumes:
+  appwrite-cli-home:
