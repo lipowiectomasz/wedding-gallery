@@ -28,7 +28,7 @@ $CLI create-string-attribute --database-id "$DB_ID" --collection-id photos --key
 $CLI create-string-attribute --database-id "$DB_ID" --collection-id photos --key uploaderId --size 64 --required true
 $CLI create-string-attribute --database-id "$DB_ID" --collection-id photos --key uploaderName --size 128 --required true
 $CLI create-string-attribute --database-id "$DB_ID" --collection-id photos --key deviceId --size 64 --required true
-$CLI create-integer-attribute --database-id "$DB_ID" --collection-id photos --key seq --required true --min 1 --max 20
+$CLI create-string-attribute --database-id "$DB_ID" --collection-id photos --key seq --size 2 --required true
 
 $CLI create-index --database-id "$DB_ID" --collection-id photos --key device_seq_idx --type unique --attributes deviceId seq
 

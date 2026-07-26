@@ -15,6 +15,19 @@ services:
       - HOME=/tmp
     command: ["sh", "-c", "npm install && npm run dev"]
 
+  upload-photo-fn:
+    image: node:24-slim
+    container_name: wedding-gallery-upload-photo-fn
+    user: "${UID}:${GID}"
+    working_dir: /app
+    volumes:
+      - type: bind
+        source: ./appwrite/functions/upload-photo
+        target: /app
+    environment:
+      - HOME=/tmp
+    command: ["sh", "-c", "npm install && tail -f /dev/null"]
+
   appwrite-cli:
     image: node:24-slim
     container_name: wedding-gallery-appwrite-cli
@@ -24,6 +37,9 @@ services:
       - type: bind
         source: ./appwrite/config
         target: /app
+      - type: bind
+        source: ./appwrite/functions
+        target: /app/functions
       - type: volume
         source: appwrite-cli-home
         target: /tmp
