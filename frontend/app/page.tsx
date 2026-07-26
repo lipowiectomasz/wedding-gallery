@@ -1,8 +1,28 @@
+'use client';
+
 import Link from 'next/link';
+import { useState } from 'react';
 import { FloralDecoration } from '@/components/floral-decoration';
 import { PrimaryButton } from '@/components/primary-button';
+import { buildMagicLinkRedirectUrl } from '@/lib/magic-link-url';
+import { sendMagicLink } from '@/lib/magic-link-auth';
 
 export default function HomePage() {
+  const [isEmailFormOpen, setIsEmailFormOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+
+  async function handleEmailSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setStatus('sending');
+    try {
+      await sendMagicLink(email, buildMagicLinkRedirectUrl());
+      setStatus('sent');
+    } catch {
+      setStatus('error');
+    }
+  }
+
   return (
     <main className="relative flex flex-1 flex-col overflow-hidden">
       <FloralDecoration position="top-right" />
@@ -28,11 +48,41 @@ export default function HomePage() {
             Zaloguj przez Google
           </PrimaryButton>
         </Link>
-        <Link href="/onboarding">
-          <button className="flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl border border-[#c6cfd5] text-base font-medium text-ink-soft">
+
+        {isEmailFormOpen ? (
+          <form onSubmit={handleEmailSubmit} className="flex flex-col gap-2.5">
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="Twój adres e-mail"
+              required
+              disabled={status === 'sending' || status === 'sent'}
+              className="h-14 w-full rounded-2xl border border-[#c6cfd5] px-4 text-base text-ink outline-none"
+            />
+            <button
+              type="submit"
+              disabled={status === 'sending' || status === 'sent'}
+              className="flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl border border-[#c6cfd5] text-base font-medium text-ink-soft disabled:opacity-50"
+            >
+              {status === 'sent' ? 'Link wysłany, sprawdź e-mail' : 'Wyślij link logowania'}
+            </button>
+            {status === 'error' && (
+              <p className="text-center text-xs text-error">
+                Nie udało się wysłać linku. Spróbuj ponownie.
+              </p>
+            )}
+          </form>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsEmailFormOpen(true)}
+            className="flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl border border-[#c6cfd5] text-base font-medium text-ink-soft"
+          >
             Zaloguj e-mailem
           </button>
-        </Link>
+        )}
+
         <label className="mt-1.5 flex items-start gap-2.5 rounded-2xl bg-accent-bg p-3.5">
           <input
             type="checkbox"

@@ -1,18 +1,47 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FloralDecoration } from '@/components/floral-decoration';
 import { PrimaryButton } from '@/components/primary-button';
+import { getCurrentUser } from '@/lib/current-user';
+import { getDeviceId } from '@/lib/device-id';
+import { createProfile } from '@/lib/profile-repository';
 
 export default function OnboardingPage() {
   const router = useRouter();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(event: React.FormEvent) {
+  useEffect(() => {
+    getCurrentUser().then((user) => {
+      if (!user) {
+        router.replace('/');
+      }
+    });
+  }, [router]);
+
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    router.push('/upload');
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const user = await getCurrentUser();
+      if (!user) {
+        router.replace('/');
+        return;
+      }
+
+      const fullName = `${firstName} ${lastName}`.trim();
+      await createProfile(user.$id, fullName, getDeviceId());
+      router.push('/upload');
+    } catch {
+      setError('Nie udało się zapisać danych. Spróbuj ponownie.');
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -56,8 +85,10 @@ export default function OnboardingPage() {
           </label>
         </div>
 
+        {error && <p className="text-sm text-error">{error}</p>}
+
         <div className="relative mt-auto pb-8.5">
-          <PrimaryButton type="submit" className="w-full">
+          <PrimaryButton type="submit" disabled={isSubmitting} className="w-full">
             Dalej
           </PrimaryButton>
         </div>
