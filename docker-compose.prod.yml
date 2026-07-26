@@ -13,3 +13,26 @@ services:
     restart: unless-stopped
     ports:
       - "8006:3000"
+
+  appwrite-cli:
+    image: node:24-slim
+    container_name: wedding-gallery-appwrite-cli
+    working_dir: /app
+    volumes:
+      - type: bind
+        source: ./appwrite/config
+        target: /app
+      - type: bind
+        source: ./appwrite/functions
+        target: /app/functions
+      - type: volume
+        source: appwrite-cli-home
+        target: /tmp
+    environment:
+      - HOME=/tmp
+    networks:
+      - appwrite
+    entrypoint: ["npx", "--yes", "appwrite-cli"]
+
+volumes:
+  appwrite-cli-home:
