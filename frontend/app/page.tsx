@@ -1,22 +1,26 @@
 'use client';
 
-import Link from 'next/link';
 import { useState } from 'react';
 import { FloralDecoration } from '@/components/floral-decoration';
 import { PrimaryButton } from '@/components/primary-button';
-import { buildMagicLinkRedirectUrl } from '@/lib/magic-link-url';
+import { buildAuthCallbackUrl, buildAuthFailureUrl } from '@/lib/auth-callback-url';
 import { sendMagicLink } from '@/lib/magic-link-auth';
+import { startGoogleLogin } from '@/lib/google-oauth';
 
 export default function HomePage() {
   const [isEmailFormOpen, setIsEmailFormOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
+  function handleGoogleLogin() {
+    startGoogleLogin(buildAuthCallbackUrl(), buildAuthFailureUrl());
+  }
+
   async function handleEmailSubmit(event: React.FormEvent) {
     event.preventDefault();
     setStatus('sending');
     try {
-      await sendMagicLink(email, buildMagicLinkRedirectUrl());
+      await sendMagicLink(email, buildAuthCallbackUrl());
       setStatus('sent');
     } catch {
       setStatus('error');
@@ -40,14 +44,12 @@ export default function HomePage() {
       </div>
 
       <div className="relative mt-auto flex flex-col gap-3 px-6.5 pb-8">
-        <Link href="/onboarding">
-          <PrimaryButton className="w-full">
-            <span className="flex h-6.5 w-6.5 items-center justify-center rounded-full bg-paper-light font-heading text-lg font-semibold text-ink">
-              G
-            </span>
-            Zaloguj przez Google
-          </PrimaryButton>
-        </Link>
+        <PrimaryButton type="button" onClick={handleGoogleLogin} className="w-full">
+          <span className="flex h-6.5 w-6.5 items-center justify-center rounded-full bg-paper-light font-heading text-lg font-semibold text-ink">
+            G
+          </span>
+          Zaloguj przez Google
+        </PrimaryButton>
 
         {isEmailFormOpen ? (
           <form onSubmit={handleEmailSubmit} className="flex flex-col gap-2.5">
