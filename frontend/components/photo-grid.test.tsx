@@ -1,0 +1,36 @@
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { PhotoGrid } from './photo-grid';
+import type { Photo } from '@/lib/photo-repository';
+
+vi.mock('@/lib/photo-repository', () => ({
+  getPhotoThumbnailUrl: (fileId: string) => `https://example.com/${fileId}`,
+}));
+
+function photo(overrides: Partial<Photo> = {}): Photo {
+  return {
+    fileId: 'file-1',
+    uploaderId: 'user-1',
+    uploaderName: 'Jan Kowalski',
+    createdAt: '2026-01-01T00:00:00.000+00:00',
+    ...overrides,
+  };
+}
+
+describe('PhotoGrid', () => {
+  it('renders one image per photo with the uploader name as caption', () => {
+    render(
+      <PhotoGrid photos={[photo(), photo({ fileId: 'file-2', uploaderName: 'Anna Nowak' })]} />,
+    );
+
+    expect(screen.getAllByRole('img')).toHaveLength(2);
+    expect(screen.getByText('Jan Kowalski')).toBeInTheDocument();
+    expect(screen.getByText('Anna Nowak')).toBeInTheDocument();
+  });
+
+  it('renders nothing when there are no photos', () => {
+    render(<PhotoGrid photos={[]} />);
+
+    expect(screen.queryAllByRole('img')).toHaveLength(0);
+  });
+});
