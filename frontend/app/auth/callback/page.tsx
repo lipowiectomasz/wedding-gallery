@@ -1,12 +1,12 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { completeMagicLinkSession } from '@/lib/magic-link-auth';
 import { findProfileByUserId } from '@/lib/profile-repository';
 import { getCurrentUser } from '@/lib/current-user';
 
-export default function AuthCallbackPage() {
+function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -43,5 +43,19 @@ export default function AuthCallbackPage() {
         <p className="text-base text-slate">Logowanie...</p>
       )}
     </main>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex flex-1 flex-col items-center justify-center px-8 text-center">
+          <p className="text-base text-slate">Logowanie...</p>
+        </main>
+      }
+    >
+      <AuthCallbackContent />
+    </Suspense>
   );
 }
