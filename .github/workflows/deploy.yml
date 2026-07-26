@@ -43,11 +43,5 @@ jobs:
             docker compose -f docker-compose.prod.yml up -d
             docker image prune -f
 
-            cd appwrite
-            docker compose --env-file .env build
-            docker compose --env-file .env up -d
-            cd ..
-
             sleep 10
             docker compose -f docker-compose.prod.yml ps
-            docker compose -f appwrite/docker-compose.yml ps
