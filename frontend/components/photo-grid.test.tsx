@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { PhotoGrid } from './photo-grid';
 import type { Photo } from '@/lib/photo-repository';
@@ -18,19 +19,35 @@ function photo(overrides: Partial<Photo> = {}): Photo {
 }
 
 describe('PhotoGrid', () => {
-  it('renders one image per photo with the uploader name as caption', () => {
+  it('renders one button per photo with the uploader name as caption', () => {
     render(
-      <PhotoGrid photos={[photo(), photo({ fileId: 'file-2', uploaderName: 'Anna Nowak' })]} />,
+      <PhotoGrid
+        photos={[photo(), photo({ fileId: 'file-2', uploaderName: 'Anna Nowak' })]}
+        onPhotoClick={vi.fn()}
+      />,
     );
 
-    expect(screen.getAllByRole('img')).toHaveLength(2);
+    expect(screen.getAllByRole('button')).toHaveLength(2);
     expect(screen.getByText('Jan Kowalski')).toBeInTheDocument();
     expect(screen.getByText('Anna Nowak')).toBeInTheDocument();
   });
 
   it('renders nothing when there are no photos', () => {
-    render(<PhotoGrid photos={[]} />);
+    render(<PhotoGrid photos={[]} onPhotoClick={vi.fn()} />);
 
-    expect(screen.queryAllByRole('img')).toHaveLength(0);
+    expect(screen.queryAllByRole('button')).toHaveLength(0);
+  });
+
+  it('calls onPhotoClick with the clicked photo', async () => {
+    const user = userEvent.setup();
+    const onPhotoClick = vi.fn();
+    const firstPhoto = photo();
+    const secondPhoto = photo({ fileId: 'file-2', uploaderName: 'Anna Nowak' });
+
+    render(<PhotoGrid photos={[firstPhoto, secondPhoto]} onPhotoClick={onPhotoClick} />);
+
+    await user.click(screen.getByRole('button', { name: /Anna Nowak/ }));
+
+    expect(onPhotoClick).toHaveBeenCalledWith(secondPhoto);
   });
 });

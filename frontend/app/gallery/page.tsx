@@ -6,6 +6,7 @@ import { FloralDecoration } from '@/components/floral-decoration';
 import { BottomNav } from '@/components/bottom-nav';
 import { PrimaryButton } from '@/components/primary-button';
 import { PhotoGrid } from '@/components/photo-grid';
+import { Lightbox } from '@/components/lightbox';
 import { getCurrentUser } from '@/lib/current-user';
 import { listPhotos, Photo } from '@/lib/photo-repository';
 
@@ -16,6 +17,7 @@ export default function GalleryPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   useEffect(() => {
     async function loadGallery() {
@@ -92,8 +94,20 @@ export default function GalleryPage() {
         </div>
       ) : (
         <div className="relative flex-1 overflow-y-auto">
-          <PhotoGrid photos={visiblePhotos} />
+          <PhotoGrid
+            photos={visiblePhotos}
+            onPhotoClick={(photo) => setActiveIndex(visiblePhotos.indexOf(photo))}
+          />
         </div>
+      )}
+
+      {activeIndex !== null && (
+        <Lightbox
+          photos={visiblePhotos}
+          activeIndex={activeIndex}
+          onClose={() => setActiveIndex(null)}
+          onNavigate={setActiveIndex}
+        />
       )}
 
       <BottomNav />

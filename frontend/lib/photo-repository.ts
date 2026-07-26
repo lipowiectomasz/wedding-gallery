@@ -41,6 +41,6 @@ export function getPhotoThumbnailUrl(fileId: string): string {
   return storage.getFilePreview({ bucketId: BUCKET_ID, fileId, width: 480, height: 480 });
 }
 
-export function getPhotoFullUrl(fileId: string): string {
-  return storage.getFileView({ bucketId: BUCKET_ID, fileId });
+export function getPhotoLightboxUrl(fileId: string): string {
+  return storage.getFilePreview({ bucketId: BUCKET_ID, fileId, width: 1200 });
 }

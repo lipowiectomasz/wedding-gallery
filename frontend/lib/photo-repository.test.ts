@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   countPhotosForDevice,
-  getPhotoFullUrl,
+  getPhotoLightboxUrl,
   getPhotoThumbnailUrl,
   listPhotos,
 } from './photo-repository';
@@ -13,7 +13,6 @@ vi.mock('./appwrite-client', () => ({
   },
   storage: {
     getFilePreview: vi.fn(),
-    getFileView: vi.fn(),
   },
 }));
 
@@ -79,17 +78,19 @@ describe('getPhotoThumbnailUrl', () => {
   });
 });
 
-describe('getPhotoFullUrl', () => {
+describe('getPhotoLightboxUrl', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('requests the original file view URL', () => {
-    vi.mocked(storage.getFileView).mockReturnValue('https://example.com/view');
+  it('requests a larger preview for the given file', () => {
+    vi.mocked(storage.getFilePreview).mockReturnValue('https://example.com/lightbox');
 
-    const url = getPhotoFullUrl('file-1');
+    const url = getPhotoLightboxUrl('file-1');
 
-    expect(storage.getFileView).toHaveBeenCalledWith(expect.objectContaining({ fileId: 'file-1' }));
-    expect(url).toBe('https://example.com/view');
+    expect(storage.getFilePreview).toHaveBeenCalledWith(
+      expect.objectContaining({ fileId: 'file-1', width: 1200 }),
+    );
+    expect(url).toBe('https://example.com/lightbox');
   });
 });
