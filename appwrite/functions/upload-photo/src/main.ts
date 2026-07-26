@@ -6,15 +6,22 @@ import { resolveApiEndpoint } from './resolve-endpoint.ts';
 import type { FunctionContext } from './runtime-context.ts';
 
 export default async function main({ req, res, log }: FunctionContext) {
-  let input;
+  const uploaderId = req.headers['x-appwrite-user-id'];
+  if (!uploaderId) {
+    return res.json({ error: 'unauthenticated' }, 401);
+  }
+
+  let parsed;
   try {
-    input = parseUploadRequest(req.bodyJson);
+    parsed = parseUploadRequest(req.bodyJson);
   } catch (parseError) {
     if (parseError instanceof InvalidRequestError) {
       return res.json({ error: parseError.message }, 400);
     }
     throw parseError;
   }
+
+  const input = { ...parsed, uploaderId };
 
   const client = new Client()
     .setEndpoint(await resolveApiEndpoint())

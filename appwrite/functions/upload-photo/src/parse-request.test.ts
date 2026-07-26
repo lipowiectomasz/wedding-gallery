@@ -4,7 +4,6 @@ import { InvalidRequestError, parseUploadRequest } from './parse-request';
 function validBody(): Record<string, unknown> {
   return {
     fileId: 'file-1',
-    uploaderId: 'uploader-1',
     uploaderName: 'Jan Kowalski',
     deviceId: 'device-1',
   };
@@ -15,7 +14,7 @@ describe('parseUploadRequest', () => {
     expect(parseUploadRequest(validBody())).toEqual(validBody());
   });
 
-  it.each(['fileId', 'uploaderId', 'uploaderName', 'deviceId'])(
+  it.each(['fileId', 'uploaderName', 'deviceId'])(
     'throws InvalidRequestError when %s is missing',
     (field) => {
       const body = validBody();
