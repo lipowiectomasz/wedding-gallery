@@ -5,21 +5,32 @@ import { useRouter } from 'next/navigation';
 import { FloralDecoration } from '@/components/floral-decoration';
 import { BottomNav } from '@/components/bottom-nav';
 import { UploadProgressBar } from '@/components/upload-progress-bar';
+import { UploadQueueList } from '@/components/upload-queue-list';
 import { getCurrentUser } from '@/lib/current-user';
 import { getDeviceId } from '@/lib/device-id';
 import { findProfileByUserId, Profile } from '@/lib/profile-repository';
 import { countPhotosForDevice } from '@/lib/photo-repository';
 import { uploadPhoto } from '@/lib/upload-photo';
+import { validatePhotoFile } from '@/lib/validate-photo-file';
+import {
+  createQueueItem,
+  isQueueSettled,
+  nextQueuedItem,
+  QueueItem,
+  updateQueueItem,
+} from '@/lib/upload-queue';
 
 const PHOTO_LIMIT = 20;
+const MAX_FILES_PER_SELECTION = 3;
 
 export default function UploadPage() {
   const router = useRouter();
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [photoCount, setPhotoCount] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [rejectionError, setRejectionError] = useState<string | null>(null);
+  const isProcessingRef = useRef(false);
 
   useEffect(() => {
     async function loadState() {
@@ -42,32 +53,99 @@ export default function UploadPage() {
     loadState();
   }, [router]);
 
-  async function handleFileSelected(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-
-    if (!file || !profile || isUploading) {
+  useEffect(() => {
+    if (isProcessingRef.current) {
       return;
     }
 
-    setIsUploading(true);
-    setUploadError(null);
-
-    const result = await uploadPhoto(file, profile.fullName, getDeviceId());
-
-    if (result.status === 'created') {
-      setPhotoCount((count) => Math.min(PHOTO_LIMIT, count + 1));
-    } else if (result.status === 'limit_reached') {
-      setPhotoCount(PHOTO_LIMIT);
-      setUploadError('Osiągnięto limit 20 zdjęć na to urządzenie.');
-    } else {
-      setUploadError('Nie udało się dodać zdjęcia. Spróbuj ponownie.');
+    const item = nextQueuedItem(queue);
+    if (!item || !profile) {
+      return;
     }
 
-    setIsUploading(false);
+    isProcessingRef.current = true;
+
+    Promise.resolve()
+      .then(() => setQueue((current) => updateQueueItem(current, item.id, { status: 'uploading' })))
+      .then(() =>
+        uploadPhoto(item.file, profile.fullName, getDeviceId(), (progress) => {
+          setQueue((current) => updateQueueItem(current, item.id, { progress }));
+        }),
+      )
+      .then((result) => {
+        if (result.status === 'created') {
+          setPhotoCount((count) => Math.min(PHOTO_LIMIT, count + 1));
+          setQueue((current) =>
+            updateQueueItem(current, item.id, { status: 'done', progress: 100 }),
+          );
+        } else if (result.status === 'limit_reached') {
+          setPhotoCount(PHOTO_LIMIT);
+          setQueue((current) =>
+            updateQueueItem(current, item.id, {
+              status: 'error',
+              errorMessage: 'Osiągnięto limit 20 zdjęć na to urządzenie.',
+            }),
+          );
+        } else {
+          setQueue((current) =>
+            updateQueueItem(current, item.id, {
+              status: 'error',
+              errorMessage: 'Sieć się urwała w połowie. Spróbuj jeszcze raz.',
+            }),
+          );
+        }
+        isProcessingRef.current = false;
+      });
+  }, [queue, profile]);
+
+  useEffect(() => {
+    if (queue.length === 0) {
+      return;
+    }
+
+    const hasErrors = queue.some((item) => item.status === 'error');
+    if (!hasErrors && isQueueSettled(queue)) {
+      const timeout = setTimeout(() => setQueue([]), 1500);
+      return () => clearTimeout(timeout);
+    }
+  }, [queue]);
+
+  function handleFileSelected(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = '';
+
+    if (files.length === 0 || !profile) {
+      return;
+    }
+
+    const remainingSlots = PHOTO_LIMIT - photoCount;
+    const selectedFiles = files.slice(0, Math.min(MAX_FILES_PER_SELECTION, remainingSlots));
+
+    const oversizedFile = selectedFiles.map(validatePhotoFile).find((error) => error !== null);
+    if (oversizedFile) {
+      setRejectionError(oversizedFile);
+      return;
+    }
+
+    setRejectionError(null);
+    setQueue((current) => [
+      ...current,
+      ...selectedFiles.map((file) => createQueueItem(crypto.randomUUID(), file)),
+    ]);
+  }
+
+  function handleRetry(id: string) {
+    setQueue((current) =>
+      updateQueueItem(current, id, { status: 'queued', progress: 0, errorMessage: null }),
+    );
+  }
+
+  function handleSkip(id: string) {
+    setQueue((current) => current.filter((item) => item.id !== id));
   }
 
   const isAtLimit = photoCount >= PHOTO_LIMIT;
+  const isUploading = queue.some((item) => item.status === 'uploading' || item.status === 'queued');
 
   return (
     <main className="relative flex flex-1 flex-col overflow-hidden">
@@ -98,37 +176,44 @@ export default function UploadPage() {
           type="file"
           accept="image/*"
           capture="environment"
+          multiple
           onChange={handleFileSelected}
           disabled={isAtLimit || isUploading || !profile}
           className="hidden"
         />
-        <button
-          type="button"
-          onClick={() => cameraInputRef.current?.click()}
-          disabled={isAtLimit || isUploading || !profile}
-          className="flex flex-col items-center gap-4.5 rounded-3xl border-[1.5px] border-dashed border-[#bfd6e6] bg-gradient-to-b from-white to-[#f6fafd] px-6 pt-9 pb-8.5 shadow-[inset_0_1px_0_#fff] disabled:opacity-60"
-        >
-          <span className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-gold-light via-gold to-gold-dark shadow-[0_14px_30px_-12px_rgba(163,125,52,0.7)]">
-            <span className="relative flex h-11 w-14 items-center justify-center rounded-lg border-3 border-white">
-              <span className="absolute -top-2.25 left-3.5 h-1.75 w-5 rounded-t-sm bg-white" />
-              <span className="h-5 w-5 rounded-full border-3 border-white" />
-            </span>
-          </span>
-          <span className="flex flex-col items-center gap-1.5">
-            <span className="text-[23px] font-bold text-ink">
-              {isAtLimit ? 'Limit wykorzystany' : isUploading ? 'Wysyłanie...' : 'Zrób zdjęcie'}
-            </span>
-            <span className="text-sm text-[#6c7f8c]">
-              {isAtLimit
-                ? 'Nie możesz już dodać więcej zdjęć'
-                : isUploading
-                  ? 'Chwila, trwa zapisywanie'
-                  : 'Dotknij — otworzy się aparat'}
-            </span>
-          </span>
-        </button>
 
-        {uploadError && <p className="text-center text-sm text-error">{uploadError}</p>}
+        {queue.length > 0 ? (
+          <>
+            <p className="text-sm text-slate">
+              Możesz spokojnie robić kolejne zdjęcia — wysyłanie leci w tle.
+            </p>
+            <UploadQueueList queue={queue} onRetry={handleRetry} onSkip={handleSkip} />
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            disabled={isAtLimit || !profile}
+            className="flex flex-col items-center gap-4.5 rounded-3xl border-[1.5px] border-dashed border-[#bfd6e6] bg-gradient-to-b from-white to-[#f6fafd] px-6 pt-9 pb-8.5 shadow-[inset_0_1px_0_#fff] disabled:opacity-60"
+          >
+            <span className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-gold-light via-gold to-gold-dark shadow-[0_14px_30px_-12px_rgba(163,125,52,0.7)]">
+              <span className="relative flex h-11 w-14 items-center justify-center rounded-lg border-3 border-white">
+                <span className="absolute -top-2.25 left-3.5 h-1.75 w-5 rounded-t-sm bg-white" />
+                <span className="h-5 w-5 rounded-full border-3 border-white" />
+              </span>
+            </span>
+            <span className="flex flex-col items-center gap-1.5">
+              <span className="text-[23px] font-bold text-ink">
+                {isAtLimit ? 'Limit wykorzystany' : 'Zrób zdjęcie'}
+              </span>
+              <span className="text-sm text-[#6c7f8c]">
+                {isAtLimit ? 'Nie możesz już dodać więcej zdjęć' : 'Dotknij — otworzy się aparat'}
+              </span>
+            </span>
+          </button>
+        )}
+
+        {rejectionError && <p className="text-center text-sm text-error">{rejectionError}</p>}
       </div>
 
       <BottomNav />

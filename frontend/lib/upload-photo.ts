@@ -12,6 +12,7 @@ export async function uploadPhoto(
   file: File,
   uploaderName: string,
   deviceId: string,
+  onProgress?: (progress: number) => void,
 ): Promise<UploadPhotoResult> {
   const user = await getCurrentUser();
   if (!user) {
@@ -23,6 +24,7 @@ export async function uploadPhoto(
     fileId: ID.unique(),
     file,
     permissions: [Permission.read(Role.users()), Permission.delete(Role.user(user.$id))],
+    onProgress: onProgress ? (event) => onProgress(event.progress) : undefined,
   });
 
   try {

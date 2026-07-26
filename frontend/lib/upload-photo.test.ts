@@ -76,4 +76,21 @@ describe('uploadPhoto', () => {
     expect(result).toEqual({ status: 'error' });
     expect(storage.deleteFile).toHaveBeenCalled();
   });
+
+  it('forwards upload progress to the onProgress callback', async () => {
+    vi.mocked(functions.createExecution).mockResolvedValue({
+      responseStatusCode: 201,
+    } as never);
+    vi.mocked(storage.createFile).mockImplementation(async (params) => {
+      (params as { onProgress?: (event: { progress: number }) => void }).onProgress?.({
+        progress: 42,
+      });
+      return { $id: 'file-1' } as never;
+    });
+
+    const onProgress = vi.fn();
+    await uploadPhoto(testFile, 'Jan Kowalski', 'device-1', onProgress);
+
+    expect(onProgress).toHaveBeenCalledWith(42);
+  });
 });

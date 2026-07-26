@@ -38,6 +38,11 @@ export function UploadProgressBar({ used, limit }: UploadProgressBarProps) {
       <div className={`h-1.75 overflow-hidden rounded-full ${trackClasses}`}>
         <div className={`h-full rounded-full ${barClasses}`} style={{ width: `${percent}%` }} />
       </div>
+      {isNearLimit && (
+        <p className="text-sm text-[#7a5c1e]">
+          Zostały ostatnie {remaining} — wybierz kadry, które naprawdę chcesz pokazać.
+        </p>
+      )}
     </div>
   );
 }
