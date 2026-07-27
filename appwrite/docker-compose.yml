@@ -28,8 +28,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - appwrite-config:/storage/config:ro
       - appwrite-certificates:/storage/certificates:ro
-      - ./certs:/tls-certs:ro
-      - ./tls-dynamic.yml:/storage/config/tls-dynamic.yml:ro
     depends_on:
       - appwrite
     networks:
