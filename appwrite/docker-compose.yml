@@ -23,10 +23,13 @@ services:
       - --entrypoints.appwrite_websecure.address=:443
     ports:
       - ${_APP_HTTP_PORT:-80}:80
+      - ${_APP_HTTPS_PORT:-8444}:443
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - appwrite-config:/storage/config:ro
       - appwrite-certificates:/storage/certificates:ro
+      - ./certs:/tls-certs:ro
+      - ./tls-dynamic.yml:/storage/config/tls-dynamic.yml:ro
     depends_on:
       - appwrite
     networks:
