@@ -45,12 +45,12 @@ export default function OnboardingPage() {
   }
 
   return (
-    <main className="relative flex flex-1 flex-col overflow-hidden">
+    <main className="relative flex flex-1 flex-col overflow-hidden md:items-center md:justify-center">
       <FloralDecoration position="bottom-right-mirrored" />
 
       <form
         onSubmit={handleSubmit}
-        className="relative mx-auto flex w-full max-w-[350px] flex-1 flex-col gap-6.5 px-7.5 pt-21"
+        className="relative mx-auto flex w-full max-w-[350px] flex-1 flex-col gap-6.5 px-7.5 pt-21 md:flex-none md:pt-0"
       >
         <div className="flex flex-col gap-2.5">
           <h1 className="font-heading text-4xl leading-tight">
@@ -90,7 +90,7 @@ export default function OnboardingPage() {
 
         {error && <p className="text-sm text-error">{error}</p>}
 
-        <div className="relative mt-auto pb-8.5">
+        <div className="relative mt-auto pb-8.5 md:mt-6.5 md:pb-0">
           <PrimaryButton type="submit" disabled={isSubmitting} className="w-full">
             Dalej
           </PrimaryButton>

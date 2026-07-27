@@ -28,11 +28,11 @@ export default function HomePage() {
   }
 
   return (
-    <main className="relative flex flex-1 flex-col overflow-hidden">
+    <main className="relative flex flex-1 flex-col overflow-hidden md:items-center md:justify-center">
       <FloralDecoration position="top-right" />
       <FloralDecoration position="bottom-left" />
 
-      <div className="relative flex flex-col items-center gap-3.5 px-8 pt-24 text-center">
+      <div className="relative flex flex-col items-center gap-3.5 px-8 pt-24 text-center md:pt-0 md:pb-8">
         <p className="text-xs font-semibold tracking-[0.26em] text-gold uppercase">
           15 · 08 · 2026
         </p>
@@ -43,7 +43,7 @@ export default function HomePage() {
         </p>
       </div>
 
-      <div className="relative mx-auto mt-auto flex w-full max-w-[350px] flex-col gap-3 px-6.5 pb-8">
+      <div className="relative mx-auto mt-auto flex w-full max-w-[350px] flex-col gap-3 px-6.5 pb-8 md:mt-0 md:pb-0">
         <PrimaryButton type="button" onClick={handleGoogleLogin} className="w-full">
           <span className="flex h-6.5 w-6.5 items-center justify-center rounded-full bg-paper-light font-heading text-lg font-semibold text-ink">
             G
