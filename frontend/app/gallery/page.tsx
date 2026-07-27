@@ -38,7 +38,7 @@ export default function GalleryPage() {
       <FloralDecoration position="top-right" />
       <FloralDecoration position="bottom-left" />
 
-      <div className="relative flex items-center justify-between px-4 pt-3.5 pb-3">
+      <div className="relative mx-auto flex w-full max-w-[350px] items-center justify-between px-4 pt-3.5 pb-3">
         <h1 className="font-heading text-[22px]">Galeria</h1>
         {photos.length > 0 && (
           <div className="flex items-center gap-1.5 rounded-full border border-border-soft bg-paper-light p-0.5 text-xs">
@@ -65,7 +65,7 @@ export default function GalleryPage() {
           <p className="text-sm text-slate">Wczytywanie...</p>
         </div>
       ) : photos.length === 0 ? (
-        <div className="relative flex flex-1 flex-col items-center justify-center gap-5 px-8.5 text-center">
+        <div className="relative mx-auto flex w-full max-w-[350px] flex-1 flex-col items-center justify-center gap-5 px-8.5 text-center">
           <span className="flex h-27.5 w-27.5 items-center justify-center rounded-full border border-accent-border bg-accent-bg">
             <span className="relative flex h-10.5 w-13 items-center justify-center rounded-lg border-[2.5px] border-accent">
               <span className="absolute -top-2 left-3.25 h-1.5 w-4.75 rounded-t-sm bg-accent" />

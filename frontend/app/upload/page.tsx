@@ -151,7 +151,7 @@ export default function UploadPage() {
     <main className="relative flex flex-1 flex-col overflow-hidden">
       <FloralDecoration position="bottom-left" />
 
-      <div className="relative flex items-center justify-between px-5 pt-4 pb-3">
+      <div className="relative mx-auto flex w-full max-w-[350px] items-center justify-between px-5 pt-4 pb-3">
         <h1 className="font-heading text-[22px]">Dodaj zdjęcie</h1>
         {profile && (
           <div className="flex items-center gap-2">
@@ -168,7 +168,7 @@ export default function UploadPage() {
         )}
       </div>
 
-      <div className="relative flex flex-col gap-4.5 px-5">
+      <div className="relative mx-auto flex w-full max-w-[350px] flex-col gap-4.5 px-5">
         <UploadProgressBar used={photoCount} limit={PHOTO_LIMIT} />
 
         <input

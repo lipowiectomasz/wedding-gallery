@@ -43,7 +43,7 @@ export default function HomePage() {
         </p>
       </div>
 
-      <div className="relative mt-auto flex flex-col gap-3 px-6.5 pb-8">
+      <div className="relative mx-auto mt-auto flex w-full max-w-[350px] flex-col gap-3 px-6.5 pb-8">
         <PrimaryButton type="button" onClick={handleGoogleLogin} className="w-full">
           <span className="flex h-6.5 w-6.5 items-center justify-center rounded-full bg-paper-light font-heading text-lg font-semibold text-ink">
             G

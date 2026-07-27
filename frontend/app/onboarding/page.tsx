@@ -48,7 +48,10 @@ export default function OnboardingPage() {
     <main className="relative flex flex-1 flex-col overflow-hidden">
       <FloralDecoration position="bottom-right-mirrored" />
 
-      <form onSubmit={handleSubmit} className="relative flex flex-1 flex-col gap-6.5 px-7.5 pt-21">
+      <form
+        onSubmit={handleSubmit}
+        className="relative mx-auto flex w-full max-w-[350px] flex-1 flex-col gap-6.5 px-7.5 pt-21"
+      >
         <div className="flex flex-col gap-2.5">
           <h1 className="font-heading text-4xl leading-tight">
             Jak się

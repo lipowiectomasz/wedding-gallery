@@ -12,7 +12,7 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="mt-auto flex border-t border-border-soft bg-paper-light">
+    <nav className="mx-auto mt-auto flex w-full max-w-[350px] border-t border-border-soft bg-paper-light">
       {tabs.map((tab) => {
         const isActive = pathname === tab.href;
         return (
