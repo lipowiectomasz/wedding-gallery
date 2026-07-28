@@ -25,6 +25,7 @@ const MAX_FILES_PER_SELECTION = 3;
 
 export default function UploadPage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [photoCount, setPhotoCount] = useState(0);
@@ -148,10 +149,10 @@ export default function UploadPage() {
   const isUploading = queue.some((item) => item.status === 'uploading' || item.status === 'queued');
 
   return (
-    <main className="relative flex flex-1 flex-col overflow-hidden">
+    <main className="relative flex flex-1 flex-col overflow-hidden md:items-center md:justify-center">
       <FloralDecoration position="bottom-left" />
 
-      <div className="relative mx-auto flex w-full max-w-[350px] items-center justify-between px-5 pt-4 pb-3">
+      <div className="relative mx-auto flex w-full max-w-[350px] items-center justify-between px-5 pt-4 pb-3 md:pt-0">
         <h1 className="font-heading text-[22px]">Dodaj zdjęcie</h1>
         {profile && (
           <div className="flex items-center gap-2">
@@ -172,6 +173,16 @@ export default function UploadPage() {
         <UploadProgressBar used={photoCount} limit={PHOTO_LIMIT} />
 
         <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleFileSelected}
+          disabled={isAtLimit || isUploading || !profile}
+          className="hidden"
+        />
+
+        <input
           ref={cameraInputRef}
           type="file"
           accept="image/*"
@@ -190,27 +201,38 @@ export default function UploadPage() {
             <UploadQueueList queue={queue} onRetry={handleRetry} onSkip={handleSkip} />
           </>
         ) : (
-          <button
-            type="button"
-            onClick={() => cameraInputRef.current?.click()}
-            disabled={isAtLimit || !profile}
-            className="flex flex-col items-center gap-4.5 rounded-3xl border-[1.5px] border-dashed border-[#bfd6e6] bg-gradient-to-b from-white to-[#f6fafd] px-6 pt-9 pb-8.5 shadow-[inset_0_1px_0_#fff] disabled:opacity-60"
-          >
-            <span className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-gold-light via-gold to-gold-dark shadow-[0_14px_30px_-12px_rgba(163,125,52,0.7)]">
-              <span className="relative flex h-11 w-14 items-center justify-center rounded-lg border-3 border-white">
-                <span className="absolute -top-2.25 left-3.5 h-1.75 w-5 rounded-t-sm bg-white" />
-                <span className="h-5 w-5 rounded-full border-3 border-white" />
+          <>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isAtLimit || !profile}
+              className="flex flex-col items-center gap-4.5 rounded-3xl border-[1.5px] border-dashed border-[#bfd6e6] bg-gradient-to-b from-white to-[#f6fafd] px-6 pt-9 pb-8.5 shadow-[inset_0_1px_0_#fff] disabled:opacity-60"
+            >
+              <span className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-gold-light via-gold to-gold-dark shadow-[0_14px_30px_-12px_rgba(163,125,52,0.7)]">
+                <span className="relative flex h-11 w-14 items-center justify-center rounded-lg border-3 border-white">
+                  <span className="absolute -top-2.25 left-3.5 h-1.75 w-5 rounded-t-sm bg-white" />
+                  <span className="h-5 w-5 rounded-full border-3 border-white" />
+                </span>
               </span>
-            </span>
-            <span className="flex flex-col items-center gap-1.5">
-              <span className="text-[23px] font-bold text-ink">
-                {isAtLimit ? 'Limit wykorzystany' : 'Zrób zdjęcie'}
+              <span className="flex flex-col items-center gap-1.5">
+                <span className="text-[23px] font-bold text-ink">
+                  {isAtLimit ? 'Limit wykorzystany' : 'Dodaj zdjęcia'}
+                </span>
+                <span className="text-sm text-[#6c7f8c]">
+                  {isAtLimit ? 'Nie możesz już dodać więcej zdjęć' : 'Dotknij — wybierz z galerii'}
+                </span>
               </span>
-              <span className="text-sm text-[#6c7f8c]">
-                {isAtLimit ? 'Nie możesz już dodać więcej zdjęć' : 'Dotknij — otworzy się aparat'}
-              </span>
-            </span>
-          </button>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => cameraInputRef.current?.click()}
+              disabled={isAtLimit || !profile}
+              className="flex items-center justify-center gap-2 rounded-2xl border border-border-soft py-3 text-sm font-medium text-slate-light disabled:opacity-60 md:hidden"
+            >
+              Zrób zdjęcie aparatem
+            </button>
+          </>
         )}
 
         {rejectionError && <p className="text-center text-sm text-error">{rejectionError}</p>}
