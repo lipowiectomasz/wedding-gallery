@@ -1,23 +1,48 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { FloralDecoration } from '@/components/floral-decoration';
 import { PrimaryButton } from '@/components/primary-button';
 import { buildAuthCallbackUrl, buildAuthFailureUrl } from '@/lib/auth-callback-url';
+import { getCurrentUser } from '@/lib/current-user';
+import { findProfileByUserId } from '@/lib/profile-repository';
 import { sendMagicLink } from '@/lib/magic-link-auth';
 import { startGoogleLogin } from '@/lib/google-oauth';
 
 export default function HomePage() {
+  const router = useRouter();
   const [isEmailFormOpen, setIsEmailFormOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [isConsentChecked, setIsConsentChecked] = useState(false);
+
+  useEffect(() => {
+    async function redirectIfLoggedIn() {
+      const user = await getCurrentUser();
+      if (!user) {
+        return;
+      }
+
+      const profile = await findProfileByUserId(user.$id);
+      router.replace(profile ? '/upload' : '/onboarding');
+    }
+
+    redirectIfLoggedIn();
+  }, [router]);
 
   function handleGoogleLogin() {
+    if (!isConsentChecked) {
+      return;
+    }
     startGoogleLogin(buildAuthCallbackUrl(), buildAuthFailureUrl());
   }
 
   async function handleEmailSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (!isConsentChecked) {
+      return;
+    }
     setStatus('sending');
     try {
       await sendMagicLink(email, buildAuthCallbackUrl());
@@ -44,7 +69,25 @@ export default function HomePage() {
       </div>
 
       <div className="relative mx-auto mt-auto flex w-full max-w-[350px] flex-col gap-3 px-6.5 pb-8 md:mt-0 md:pb-0">
-        <PrimaryButton type="button" onClick={handleGoogleLogin} className="w-full">
+        <label className="flex items-start gap-2.5 rounded-2xl bg-accent-bg p-3.5">
+          <input
+            type="checkbox"
+            checked={isConsentChecked}
+            onChange={(event) => setIsConsentChecked(event.target.checked)}
+            className="mt-0.5 h-5 w-5 flex-none rounded-md border border-accent bg-paper-light"
+          />
+          <span className="text-xs leading-relaxed text-[#4a6373]">
+            Zgadzam się na publikację moich zdjęć w galerii wesela.{' '}
+            <span className="text-accent-dark underline">Szczegóły i RODO</span>
+          </span>
+        </label>
+
+        <PrimaryButton
+          type="button"
+          onClick={handleGoogleLogin}
+          disabled={!isConsentChecked}
+          className="w-full"
+        >
           <span className="flex h-6.5 w-6.5 items-center justify-center rounded-full bg-paper-light font-heading text-lg font-semibold text-ink">
             G
           </span>
@@ -64,7 +107,7 @@ export default function HomePage() {
             />
             <button
               type="submit"
-              disabled={status === 'sending' || status === 'sent'}
+              disabled={!isConsentChecked || status === 'sending' || status === 'sent'}
               className="flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl border border-[#c6cfd5] text-base font-medium text-ink-soft disabled:opacity-50"
             >
               {status === 'sent' ? 'Link wysłany, sprawdź e-mail' : 'Wyślij link logowania'}
@@ -79,23 +122,12 @@ export default function HomePage() {
           <button
             type="button"
             onClick={() => setIsEmailFormOpen(true)}
-            className="flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl border border-[#c6cfd5] text-base font-medium text-ink-soft"
+            disabled={!isConsentChecked}
+            className="flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl border border-[#c6cfd5] text-base font-medium text-ink-soft disabled:opacity-50"
           >
             Zaloguj e-mailem
           </button>
         )}
-
-        <label className="mt-1.5 flex items-start gap-2.5 rounded-2xl bg-accent-bg p-3.5">
-          <input
-            type="checkbox"
-            required
-            className="mt-0.5 h-5 w-5 flex-none rounded-md border border-accent bg-paper-light"
-          />
-          <span className="text-xs leading-relaxed text-[#4a6373]">
-            Zgadzam się na publikację moich zdjęć w galerii wesela.{' '}
-            <span className="text-accent-dark underline">Szczegóły i RODO</span>
-          </span>
-        </label>
       </div>
     </main>
   );

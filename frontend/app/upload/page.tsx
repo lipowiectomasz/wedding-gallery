@@ -8,6 +8,7 @@ import { UploadProgressBar } from '@/components/upload-progress-bar';
 import { UploadQueueList } from '@/components/upload-queue-list';
 import { getCurrentUser } from '@/lib/current-user';
 import { getDeviceId } from '@/lib/device-id';
+import { logout } from '@/lib/logout';
 import { findProfileByUserId, Profile } from '@/lib/profile-repository';
 import { countPhotosForDevice } from '@/lib/photo-repository';
 import { uploadPhoto } from '@/lib/upload-photo';
@@ -48,7 +49,7 @@ export default function UploadPage() {
       }
 
       setProfile(currentProfile);
-      setPhotoCount(await countPhotosForDevice(currentProfile.deviceId));
+      setPhotoCount(await countPhotosForDevice(getDeviceId()));
     }
 
     loadState();
@@ -145,6 +146,11 @@ export default function UploadPage() {
     setQueue((current) => current.filter((item) => item.id !== id));
   }
 
+  async function handleLogout() {
+    await logout();
+    router.replace('/');
+  }
+
   const isAtLimit = photoCount >= PHOTO_LIMIT;
   const isUploading = queue.some((item) => item.status === 'uploading' || item.status === 'queued');
 
@@ -155,7 +161,12 @@ export default function UploadPage() {
       <div className="relative mx-auto flex w-full max-w-[350px] items-center justify-between px-5 pt-4 pb-3 md:pt-0">
         <h1 className="font-heading text-[22px]">Dodaj zdjęcie</h1>
         {profile && (
-          <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex items-center gap-2"
+            aria-label="Wyloguj się"
+          >
             <span className="flex h-7.5 w-7.5 items-center justify-center rounded-full border border-accent-border bg-accent-bg text-xs font-bold text-accent-dark">
               {profile.fullName
                 .split(' ')
@@ -165,7 +176,7 @@ export default function UploadPage() {
                 .toUpperCase()}
             </span>
             <span className="text-xs text-slate-light">{profile.fullName.split(' ')[0]}</span>
-          </div>
+          </button>
         )}
       </div>
 
