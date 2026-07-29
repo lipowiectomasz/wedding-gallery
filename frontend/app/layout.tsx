@@ -29,7 +29,9 @@ export default function RootLayout({
       lang="pl"
       className={`${cormorantGaramond.variable} ${karla.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-paper text-ink font-body">{children}</body>
+      <body className="flex h-dvh flex-col overflow-hidden bg-paper text-ink font-body">
+        {children}
+      </body>
     </html>
   );
 }

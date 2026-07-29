@@ -30,3 +30,24 @@
   --color-error-bg: #fbf0ef;
   --color-error-border: #efd3d1;
 }
+
+@keyframes photo-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-photo-in {
+  animation: photo-in 0.4s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-photo-in {
+    animation: none;
+  }
+}

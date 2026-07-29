@@ -12,7 +12,8 @@ import { listPhotos, Photo } from '@/lib/photo-repository';
 
 type Filter = 'all' | 'mine';
 
-const RESUME_DELAY_MS = 4000;
+const INITIAL_VISIBLE_COUNT = 6;
+const LOAD_MORE_COUNT = 6;
 
 export default function GalleryPage() {
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -20,9 +21,10 @@ export default function GalleryPage() {
   const [filter, setFilter] = useState<Filter>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [isUserInteracting, setIsUserInteracting] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
+  const [newPhotoIds, setNewPhotoIds] = useState<Set<string>>(new Set());
+  const loadMoreRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const resumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     async function loadGallery() {
@@ -35,53 +37,40 @@ export default function GalleryPage() {
     loadGallery();
   }, []);
 
-  function scheduleResume() {
-    if (resumeTimeoutRef.current) {
-      clearTimeout(resumeTimeoutRef.current);
-    }
-    resumeTimeoutRef.current = setTimeout(() => {
-      setIsUserInteracting(false);
-    }, RESUME_DELAY_MS);
-  }
-
-  function handleColumnInteractionChange(isInteracting: boolean) {
-    setIsUserInteracting(isInteracting);
-    if (isInteracting && resumeTimeoutRef.current) {
-      clearTimeout(resumeTimeoutRef.current);
-    } else if (!isInteracting) {
-      scheduleResume();
-    }
-  }
+  const visiblePhotos =
+    filter === 'mine' ? photos.filter((photo) => photo.uploaderId === currentUserId) : photos;
+  const paginatedPhotos = visiblePhotos.slice(0, visibleCount);
+  const hasMore = visibleCount < visiblePhotos.length;
 
   useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) {
+    const sentinel = loadMoreRef.current;
+    if (!sentinel || !hasMore) {
       return;
     }
 
-    function handleUserInteraction() {
-      setIsUserInteracting(true);
-      scheduleResume();
-    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setVisibleCount((current) => {
+            const next = Math.min(current + LOAD_MORE_COUNT, visiblePhotos.length);
+            const newlyRevealed = visiblePhotos.slice(current, next).map((photo) => photo.fileId);
+            setNewPhotoIds(new Set(newlyRevealed));
+            return next;
+          });
+        }
+      },
+      { root: scrollContainerRef.current, rootMargin: '200px' },
+    );
 
-    container.addEventListener('wheel', handleUserInteraction, { passive: true });
-    container.addEventListener('touchmove', handleUserInteraction, { passive: true });
-    container.addEventListener('scroll', handleUserInteraction, { passive: true });
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, visiblePhotos]);
 
-    return () => {
-      container.removeEventListener('wheel', handleUserInteraction);
-      container.removeEventListener('touchmove', handleUserInteraction);
-      container.removeEventListener('scroll', handleUserInteraction);
-      if (resumeTimeoutRef.current) {
-        clearTimeout(resumeTimeoutRef.current);
-      }
-    };
-  }, [isLoading]);
-
-  const isScrollPaused = isUserInteracting || activeIndex !== null;
-
-  const visiblePhotos =
-    filter === 'mine' ? photos.filter((photo) => photo.uploaderId === currentUserId) : photos;
+  function handleFilterChange(nextFilter: Filter) {
+    setFilter(nextFilter);
+    setVisibleCount(INITIAL_VISIBLE_COUNT);
+    setNewPhotoIds(new Set());
+  }
 
   return (
     <main className="relative flex flex-1 flex-col overflow-hidden">
@@ -94,14 +83,14 @@ export default function GalleryPage() {
           <div className="flex items-center gap-1.5 rounded-full border border-border-soft bg-paper-light p-0.5 text-xs">
             <button
               type="button"
-              onClick={() => setFilter('all')}
+              onClick={() => handleFilterChange('all')}
               className={`cursor-pointer rounded-full px-3 py-1 ${filter === 'all' ? 'bg-ink text-paper-light' : 'text-slate-light'}`}
             >
               Wszystkie
             </button>
             <button
               type="button"
-              onClick={() => setFilter('mine')}
+              onClick={() => handleFilterChange('mine')}
               className={`cursor-pointer rounded-full px-3 py-1 ${filter === 'mine' ? 'bg-ink text-paper-light' : 'text-slate-light'}`}
             >
               Moje
@@ -143,19 +132,19 @@ export default function GalleryPage() {
           </p>
         </div>
       ) : (
-        <div ref={scrollContainerRef} className="relative flex-1 overflow-y-auto pb-16">
+        <div ref={scrollContainerRef} className="relative min-h-0 flex-1 overflow-y-auto pb-16">
           <PhotoGrid
-            photos={visiblePhotos}
-            isScrollPaused={isScrollPaused}
-            onInteractionChange={handleColumnInteractionChange}
-            onPhotoClick={(photo) => setActiveIndex(visiblePhotos.indexOf(photo))}
+            photos={paginatedPhotos}
+            newPhotoIds={newPhotoIds}
+            onPhotoClick={(photo) => setActiveIndex(paginatedPhotos.indexOf(photo))}
           />
+          {hasMore && <div ref={loadMoreRef} className="h-1" aria-hidden="true" />}
         </div>
       )}
 
       {activeIndex !== null && (
         <Lightbox
-          photos={visiblePhotos}
+          photos={paginatedPhotos}
           activeIndex={activeIndex}
           onClose={() => setActiveIndex(null)}
           onNavigate={setActiveIndex}

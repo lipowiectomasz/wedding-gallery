@@ -171,7 +171,7 @@ export default function UploadPage() {
   const isUploading = queue.some((item) => item.status === 'uploading' || item.status === 'queued');
 
   return (
-    <main className="relative flex flex-1 flex-col overflow-hidden md:items-center md:justify-center">
+    <main className="relative flex min-h-0 flex-1 flex-col overflow-y-auto md:items-center md:justify-center">
       <FloralDecoration position="bottom-left" />
 
       <div className="relative mx-auto flex w-full max-w-[350px] items-center justify-between px-5 pt-4 pb-3 md:pt-0">
