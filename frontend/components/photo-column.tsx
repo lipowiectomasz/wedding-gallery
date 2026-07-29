@@ -12,6 +12,8 @@ type PhotoColumnProps = {
 
 const PIXELS_PER_SECOND = 12;
 const DRAG_CLICK_THRESHOLD_PX = 6;
+const GAP_PX = 10;
+const MAX_REPEAT_COUNT = 20;
 
 export function PhotoColumn({
   photos,
@@ -32,34 +34,31 @@ export function PhotoColumn({
   const loopedPhotos = shouldLoop
     ? Array.from({ length: repeatCount }, () => photos).flat()
     : photos;
+  const photosKey = photos.map((photo) => photo.fileId).join(',');
 
   useLayoutEffect(() => {
     const container = containerRef.current;
-    const track = trackRef.current;
-    if (!container || !track || !shouldLoop || photos.length === 0) {
+    const firstPhoto = trackRef.current?.querySelector('[data-photo-item]') as HTMLElement | null;
+    if (!container || !firstPhoto || !shouldLoop) {
       return;
     }
 
-    const children = Array.from(track.children) as HTMLElement[];
-    const originalSetLength = photos.length;
-    const firstSet = children.slice(0, originalSetLength);
-    if (firstSet.length === 0) {
+    const itemHeight = firstPhoto.getBoundingClientRect().height;
+    if (itemHeight <= 0) {
       return;
     }
 
-    const lastElementOfSet = firstSet[firstSet.length - 1];
-    const singleSetHeight = lastElementOfSet.offsetTop + lastElementOfSet.offsetHeight;
-    if (singleSetHeight <= 0) {
-      return;
-    }
-
+    const singleSetHeight = itemHeight * photos.length + GAP_PX * (photos.length - 1) + GAP_PX;
     const containerHeight = container.clientHeight;
-    const neededRepeats = Math.max(2, Math.ceil((containerHeight * 2) / singleSetHeight) + 1);
+    const neededRepeats = Math.min(
+      MAX_REPEAT_COUNT,
+      Math.max(2, Math.ceil((containerHeight * 2) / singleSetHeight) + 1),
+    );
 
     cycleHeightRef.current = singleSetHeight;
-
     setRepeatCount((current) => (current === neededRepeats ? current : neededRepeats));
-  }, [photos, shouldLoop]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photosKey, shouldLoop]);
 
   useEffect(() => {
     if (!shouldLoop) {
@@ -117,6 +116,7 @@ export function PhotoColumn({
     if (!shouldLoop) {
       return;
     }
+    wasDraggedRef.current = false;
     dragStateRef.current = { startY: event.clientY, startOffset: offsetRef.current };
     onInteractionChange(true);
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -152,6 +152,9 @@ export function PhotoColumn({
   function handlePointerUp() {
     dragStateRef.current = null;
     onInteractionChange(false);
+    setTimeout(() => {
+      wasDraggedRef.current = false;
+    }, 0);
   }
 
   return (
@@ -168,9 +171,9 @@ export function PhotoColumn({
           <button
             key={`${photo.fileId}-${index}`}
             type="button"
+            data-photo-item
             onClick={(event) => {
               if (wasDraggedRef.current) {
-                wasDraggedRef.current = false;
                 event.preventDefault();
                 return;
               }
