@@ -1,30 +1,30 @@
 import type { Photo } from '@/lib/photo-repository';
-import { getPhotoThumbnailUrl } from '@/lib/photo-repository';
+import { PhotoColumn } from './photo-column';
 
 type PhotoGridProps = {
   photos: Photo[];
+  isScrollPaused: boolean;
   onPhotoClick: (photo: Photo) => void;
 };
 
-export function PhotoGrid({ photos, onPhotoClick }: PhotoGridProps) {
+export function PhotoGrid({ photos, isScrollPaused, onPhotoClick }: PhotoGridProps) {
+  const leftColumnPhotos = photos.filter((_, index) => index % 2 === 0);
+  const rightColumnPhotos = photos.filter((_, index) => index % 2 === 1);
+
   return (
-    <div className="columns-2 gap-2.5 px-4 pb-4">
-      {photos.map((photo) => (
-        <button
-          key={photo.fileId}
-          type="button"
-          onClick={() => onPhotoClick(photo)}
-          onContextMenu={(event) => event.preventDefault()}
-          draggable={false}
-          aria-label={`Zdjęcie od ${photo.uploaderName}`}
-          className="relative mb-2.5 block aspect-square w-full break-inside-avoid overflow-hidden rounded-2xl bg-cover bg-center"
-          style={{ backgroundImage: `url(${getPhotoThumbnailUrl(photo.fileId)})` }}
-        >
-          <span className="absolute right-0 bottom-0 left-0 bg-gradient-to-t from-black/60 to-transparent px-2.5 py-2 text-left text-xs text-white">
-            {photo.uploaderName}
-          </span>
-        </button>
-      ))}
+    <div className="flex gap-3 px-6 pb-4">
+      <PhotoColumn
+        photos={leftColumnPhotos}
+        direction="down"
+        isPaused={isScrollPaused}
+        onPhotoClick={onPhotoClick}
+      />
+      <PhotoColumn
+        photos={rightColumnPhotos}
+        direction="up"
+        isPaused={isScrollPaused}
+        onPhotoClick={onPhotoClick}
+      />
     </div>
   );
 }

@@ -19,21 +19,21 @@ function photo(overrides: Partial<Photo> = {}): Photo {
 }
 
 describe('PhotoGrid', () => {
-  it('renders one button per photo with the uploader name as caption', () => {
+  it('renders each photo at least once with the uploader name as caption', () => {
     render(
       <PhotoGrid
         photos={[photo(), photo({ fileId: 'file-2', uploaderName: 'Anna Nowak' })]}
+        isScrollPaused={false}
         onPhotoClick={vi.fn()}
       />,
     );
 
-    expect(screen.getAllByRole('button')).toHaveLength(2);
-    expect(screen.getByText('Jan Kowalski')).toBeInTheDocument();
-    expect(screen.getByText('Anna Nowak')).toBeInTheDocument();
+    expect(screen.getAllByText('Jan Kowalski').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Anna Nowak').length).toBeGreaterThan(0);
   });
 
   it('renders nothing when there are no photos', () => {
-    render(<PhotoGrid photos={[]} onPhotoClick={vi.fn()} />);
+    render(<PhotoGrid photos={[]} isScrollPaused={false} onPhotoClick={vi.fn()} />);
 
     expect(screen.queryAllByRole('button')).toHaveLength(0);
   });
@@ -44,9 +44,15 @@ describe('PhotoGrid', () => {
     const firstPhoto = photo();
     const secondPhoto = photo({ fileId: 'file-2', uploaderName: 'Anna Nowak' });
 
-    render(<PhotoGrid photos={[firstPhoto, secondPhoto]} onPhotoClick={onPhotoClick} />);
+    render(
+      <PhotoGrid
+        photos={[firstPhoto, secondPhoto]}
+        isScrollPaused={false}
+        onPhotoClick={onPhotoClick}
+      />,
+    );
 
-    await user.click(screen.getByRole('button', { name: /Anna Nowak/ }));
+    await user.click(screen.getAllByRole('button', { name: /Anna Nowak/ })[0]);
 
     expect(onPhotoClick).toHaveBeenCalledWith(secondPhoto);
   });

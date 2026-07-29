@@ -30,3 +30,40 @@
   --color-error-bg: #fbf0ef;
   --color-error-border: #efd3d1;
 }
+
+@keyframes scroll-up {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes scroll-down {
+  from {
+    transform: translateY(-50%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-scroll-up {
+  animation: scroll-up 60s linear infinite;
+}
+
+.animate-scroll-down {
+  animation: scroll-down 60s linear infinite;
+}
+
+.animate-scroll-paused {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-scroll-up,
+  .animate-scroll-down {
+    animation: none;
+  }
+}

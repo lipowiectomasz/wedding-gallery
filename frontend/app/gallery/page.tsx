@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FloralDecoration } from '@/components/floral-decoration';
 import { BottomNav } from '@/components/bottom-nav';
 import { PrimaryButton } from '@/components/primary-button';
@@ -12,12 +12,17 @@ import { listPhotos, Photo } from '@/lib/photo-repository';
 
 type Filter = 'all' | 'mine';
 
+const RESUME_DELAY_MS = 4000;
+
 export default function GalleryPage() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [isUserInteracting, setIsUserInteracting] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const resumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     async function loadGallery() {
@@ -29,6 +34,39 @@ export default function GalleryPage() {
 
     loadGallery();
   }, []);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) {
+      return;
+    }
+
+    function handleUserInteraction() {
+      setIsUserInteracting(true);
+
+      if (resumeTimeoutRef.current) {
+        clearTimeout(resumeTimeoutRef.current);
+      }
+      resumeTimeoutRef.current = setTimeout(() => {
+        setIsUserInteracting(false);
+      }, RESUME_DELAY_MS);
+    }
+
+    container.addEventListener('wheel', handleUserInteraction, { passive: true });
+    container.addEventListener('touchmove', handleUserInteraction, { passive: true });
+    container.addEventListener('scroll', handleUserInteraction, { passive: true });
+
+    return () => {
+      container.removeEventListener('wheel', handleUserInteraction);
+      container.removeEventListener('touchmove', handleUserInteraction);
+      container.removeEventListener('scroll', handleUserInteraction);
+      if (resumeTimeoutRef.current) {
+        clearTimeout(resumeTimeoutRef.current);
+      }
+    };
+  }, [isLoading]);
+
+  const isScrollPaused = isUserInteracting || activeIndex !== null;
 
   const visiblePhotos =
     filter === 'mine' ? photos.filter((photo) => photo.uploaderId === currentUserId) : photos;
@@ -93,9 +131,10 @@ export default function GalleryPage() {
           </p>
         </div>
       ) : (
-        <div className="relative flex-1 overflow-y-auto">
+        <div ref={scrollContainerRef} className="relative flex-1 overflow-y-auto pb-16">
           <PhotoGrid
             photos={visiblePhotos}
+            isScrollPaused={isScrollPaused}
             onPhotoClick={(photo) => setActiveIndex(visiblePhotos.indexOf(photo))}
           />
         </div>
