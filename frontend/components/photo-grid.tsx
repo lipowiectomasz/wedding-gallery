@@ -10,6 +10,13 @@ type PhotoGridProps = {
 };
 
 const AMBIENT_SCROLL_MIN_PHOTOS = 6;
+const THREE_COLUMN_MIN_PHOTOS = 20;
+
+function splitIntoColumns(photos: Photo[], columnCount: number): Photo[][] {
+  return Array.from({ length: columnCount }, (_, columnIndex) =>
+    photos.filter((_, index) => index % columnCount === columnIndex),
+  );
+}
 
 export function PhotoGrid({
   photos,
@@ -17,9 +24,11 @@ export function PhotoGrid({
   onInteractionChange,
   onPhotoClick,
 }: PhotoGridProps) {
+  const columnCount = photos.length < THREE_COLUMN_MIN_PHOTOS ? 2 : 3;
+
   if (photos.length < AMBIENT_SCROLL_MIN_PHOTOS) {
     return (
-      <div className="columns-3 gap-2 px-3 pb-4">
+      <div className={`${columnCount === 2 ? 'columns-2' : 'columns-3'} gap-2 px-3 pb-4`}>
         {photos.map((photo) => (
           <button
             key={photo.fileId}
@@ -40,33 +49,20 @@ export function PhotoGrid({
     );
   }
 
-  const leftColumnPhotos = photos.filter((_, index) => index % 3 === 0);
-  const middleColumnPhotos = photos.filter((_, index) => index % 3 === 1);
-  const rightColumnPhotos = photos.filter((_, index) => index % 3 === 2);
+  const columns = splitIntoColumns(photos, columnCount);
 
   return (
     <div className="flex gap-2 px-3 pb-4">
-      <PhotoColumn
-        photos={leftColumnPhotos}
-        direction="down"
-        isPaused={isScrollPaused}
-        onInteractionChange={onInteractionChange}
-        onPhotoClick={onPhotoClick}
-      />
-      <PhotoColumn
-        photos={middleColumnPhotos}
-        direction="up"
-        isPaused={isScrollPaused}
-        onInteractionChange={onInteractionChange}
-        onPhotoClick={onPhotoClick}
-      />
-      <PhotoColumn
-        photos={rightColumnPhotos}
-        direction="down"
-        isPaused={isScrollPaused}
-        onInteractionChange={onInteractionChange}
-        onPhotoClick={onPhotoClick}
-      />
+      {columns.map((columnPhotos, columnIndex) => (
+        <PhotoColumn
+          key={columnIndex}
+          photos={columnPhotos}
+          direction={columnIndex % 2 === 0 ? 'down' : 'up'}
+          isPaused={isScrollPaused}
+          onInteractionChange={onInteractionChange}
+          onPhotoClick={onPhotoClick}
+        />
+      ))}
     </div>
   );
 }
