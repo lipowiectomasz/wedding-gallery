@@ -6,9 +6,12 @@ export type PhotoDocument = {
   uploaderName: string;
   deviceId: string;
   seq: string;
+  fileName: string;
+  fileSize: number;
 };
 
-export type CreatePhotoResult = { status: 'created'; seq: string } | { status: 'limit_reached' };
+export type CreatePhotoResult =
+  { status: 'created'; seq: string } | { status: 'limit_reached' } | { status: 'duplicate' };
 
 export class DocumentConflictError extends Error {
   constructor() {

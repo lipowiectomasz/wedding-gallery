@@ -9,7 +9,7 @@ export class InvalidRequestError extends Error {
 export function parseUploadRequest(
   body: Record<string, unknown>,
 ): Omit<PhotoDocument, 'seq' | 'uploaderId'> {
-  const { fileId, uploaderName, deviceId } = body;
+  const { fileId, uploaderName, deviceId, fileName, fileSize } = body;
 
   if (typeof fileId !== 'string' || fileId.length === 0) {
     throw new InvalidRequestError('fileId is required');
@@ -20,6 +20,12 @@ export function parseUploadRequest(
   if (typeof deviceId !== 'string' || deviceId.length === 0) {
     throw new InvalidRequestError('deviceId is required');
   }
+  if (typeof fileName !== 'string' || fileName.length === 0) {
+    throw new InvalidRequestError('fileName is required');
+  }
+  if (typeof fileSize !== 'number' || fileSize <= 0) {
+    throw new InvalidRequestError('fileSize is required');
+  }
 
-  return { fileId, uploaderName, deviceId };
+  return { fileId, uploaderName, deviceId, fileName, fileSize };
 }

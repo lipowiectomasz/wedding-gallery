@@ -88,6 +88,13 @@ export default function UploadPage() {
               errorMessage: 'Osiągnięto limit 20 zdjęć na to konto.',
             }),
           );
+        } else if (result.status === 'duplicate') {
+          setQueue((current) =>
+            updateQueueItem(current, item.id, {
+              status: 'error',
+              errorMessage: 'To zdjęcie już zostało dodane wcześniej.',
+            }),
+          );
         } else {
           setQueue((current) =>
             updateQueueItem(current, item.id, {
@@ -96,6 +103,15 @@ export default function UploadPage() {
             }),
           );
         }
+        isProcessingRef.current = false;
+      })
+      .catch(() => {
+        setQueue((current) =>
+          updateQueueItem(current, item.id, {
+            status: 'error',
+            errorMessage: 'Sieć się urwała w połowie. Spróbuj jeszcze raz.',
+          }),
+        );
         isProcessingRef.current = false;
       });
   }, [queue, profile]);

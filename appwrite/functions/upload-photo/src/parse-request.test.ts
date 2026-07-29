@@ -6,6 +6,8 @@ function validBody(): Record<string, unknown> {
     fileId: 'file-1',
     uploaderName: 'Jan Kowalski',
     deviceId: 'device-1',
+    fileName: 'photo.jpg',
+    fileSize: 1024,
   };
 }
 
@@ -14,7 +16,7 @@ describe('parseUploadRequest', () => {
     expect(parseUploadRequest(validBody())).toEqual(validBody());
   });
 
-  it.each(['fileId', 'uploaderName', 'deviceId'])(
+  it.each(['fileId', 'uploaderName', 'deviceId', 'fileName', 'fileSize'])(
     'throws InvalidRequestError when %s is missing',
     (field) => {
       const body = validBody();

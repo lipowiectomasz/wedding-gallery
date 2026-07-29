@@ -1,5 +1,9 @@
 import { Client, Databases } from 'node-appwrite';
-import { countPhotosForUploaderWith, createPhotoDocumentWith } from './appwrite-database.ts';
+import {
+  countPhotosForUploaderWith,
+  createPhotoDocumentWith,
+  findDuplicatePhotoWith,
+} from './appwrite-database.ts';
 import { createPhotoWithLimit } from './create-photo.ts';
 import { InvalidRequestError, parseUploadRequest } from './parse-request.ts';
 import { resolveApiEndpoint } from './resolve-endpoint.ts';
@@ -34,7 +38,13 @@ export default async function main({ req, res, log }: FunctionContext) {
     input,
     countPhotosForUploaderWith(databases),
     createPhotoDocumentWith(databases),
+    findDuplicatePhotoWith(databases),
   );
+
+  if (result.status === 'duplicate') {
+    log(`duplicate photo rejected for uploader ${input.uploaderId}: ${input.fileName}`);
+    return res.json({ error: 'photo_duplicate' }, 409);
+  }
 
   if (result.status === 'limit_reached') {
     log(`photo limit reached for uploader ${input.uploaderId}`);

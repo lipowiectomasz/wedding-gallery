@@ -6,7 +6,10 @@ const BUCKET_ID = 'event-photos';
 const UPLOAD_PHOTO_FUNCTION_ID = 'upload-photo';
 
 export type UploadPhotoResult =
-  { status: 'created' } | { status: 'limit_reached' } | { status: 'error' };
+  | { status: 'created' }
+  | { status: 'limit_reached' }
+  | { status: 'duplicate' }
+  | { status: 'error' };
 
 export async function uploadPhoto(
   file: File,
@@ -27,10 +30,24 @@ export async function uploadPhoto(
     onProgress: onProgress ? (event) => onProgress(event.progress) : undefined,
   });
 
+  async function deleteUploadedFileSafely(): Promise<void> {
+    try {
+      await storage.deleteFile({ bucketId: BUCKET_ID, fileId: uploadedFile.$id });
+    } catch {
+      // Best-effort cleanup: an orphaned file is preferable to a hung upload flow.
+    }
+  }
+
   try {
     const execution = await functions.createExecution({
       functionId: UPLOAD_PHOTO_FUNCTION_ID,
-      body: JSON.stringify({ fileId: uploadedFile.$id, uploaderName, deviceId }),
+      body: JSON.stringify({
+        fileId: uploadedFile.$id,
+        uploaderName,
+        deviceId,
+        fileName: file.name,
+        fileSize: file.size,
+      }),
       method: ExecutionMethod.POST,
     });
 
@@ -38,15 +55,19 @@ export async function uploadPhoto(
       return { status: 'created' };
     }
 
-    await storage.deleteFile({ bucketId: BUCKET_ID, fileId: uploadedFile.$id });
+    await deleteUploadedFileSafely();
 
     if (execution.responseStatusCode === 409) {
+      const responseBody = JSON.parse(execution.responseBody || '{}') as { error?: string };
+      if (responseBody.error === 'photo_duplicate') {
+        return { status: 'duplicate' };
+      }
       return { status: 'limit_reached' };
     }
 
     return { status: 'error' };
   } catch {
-    await storage.deleteFile({ bucketId: BUCKET_ID, fileId: uploadedFile.$id });
+    await deleteUploadedFileSafely();
     return { status: 'error' };
   }
 }

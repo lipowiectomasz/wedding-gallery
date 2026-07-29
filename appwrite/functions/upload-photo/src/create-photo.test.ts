@@ -20,7 +20,20 @@ function createFakeDatabase() {
     documents.push(document);
   };
 
-  return { documents, countPhotosForUploader, createPhotoDocument };
+  const findDuplicatePhoto = async (
+    uploaderId: string,
+    fileName: string,
+    fileSize: number,
+  ): Promise<boolean> => {
+    return documents.some(
+      (existing) =>
+        existing.uploaderId === uploaderId &&
+        existing.fileName === fileName &&
+        existing.fileSize === fileSize,
+    );
+  };
+
+  return { documents, countPhotosForUploader, createPhotoDocument, findDuplicatePhoto };
 }
 
 function baseInput(uploaderId: string): Omit<PhotoDocument, 'seq'> {
@@ -29,17 +42,21 @@ function baseInput(uploaderId: string): Omit<PhotoDocument, 'seq'> {
     uploaderId,
     uploaderName: 'Jan Kowalski',
     deviceId: 'device-1',
+    fileName: 'photo.jpg',
+    fileSize: 1024,
   };
 }
 
 describe('createPhotoWithLimit', () => {
   it('creates a document with the next available seq', async () => {
-    const { documents, countPhotosForUploader, createPhotoDocument } = createFakeDatabase();
+    const { documents, countPhotosForUploader, createPhotoDocument, findDuplicatePhoto } =
+      createFakeDatabase();
 
     const result = await createPhotoWithLimit(
       baseInput('uploader-1'),
       countPhotosForUploader,
       createPhotoDocument,
+      findDuplicatePhoto,
     );
 
     expect(result).toEqual({ status: 'created', seq: '01' });
@@ -47,15 +64,21 @@ describe('createPhotoWithLimit', () => {
   });
 
   it('returns limit_reached without writing once the uploader already has 20 photos', async () => {
-    const { documents, countPhotosForUploader, createPhotoDocument } = createFakeDatabase();
+    const { documents, countPhotosForUploader, createPhotoDocument, findDuplicatePhoto } =
+      createFakeDatabase();
     for (let value = 1; value <= 20; value += 1) {
-      documents.push({ ...baseInput('uploader-1'), seq: value.toString().padStart(2, '0') });
+      documents.push({
+        ...baseInput('uploader-1'),
+        fileName: `other-${value}.jpg`,
+        seq: value.toString().padStart(2, '0'),
+      });
     }
 
     const result = await createPhotoWithLimit(
       baseInput('uploader-1'),
       countPhotosForUploader,
       createPhotoDocument,
+      findDuplicatePhoto,
     );
 
     expect(result).toEqual({ status: 'limit_reached' });
@@ -63,38 +86,47 @@ describe('createPhotoWithLimit', () => {
   });
 
   it('retries on a seq conflict and succeeds with the next candidate', async () => {
-    const { documents, countPhotosForUploader, createPhotoDocument } = createFakeDatabase();
-    documents.push({ ...baseInput('uploader-1'), seq: '01' });
+    const { documents, countPhotosForUploader, createPhotoDocument, findDuplicatePhoto } =
+      createFakeDatabase();
+    documents.push({ ...baseInput('uploader-1'), fileName: 'other.jpg', seq: '01' });
 
     const result = await createPhotoWithLimit(
       baseInput('uploader-1'),
       countPhotosForUploader,
       createPhotoDocument,
+      findDuplicatePhoto,
     );
 
     expect(result).toEqual({ status: 'created', seq: '02' });
   });
 
   it('propagates errors that are not seq conflicts', async () => {
-    const { countPhotosForUploader } = createFakeDatabase();
+    const { countPhotosForUploader, findDuplicatePhoto } = createFakeDatabase();
     const failingCreate = async (): Promise<void> => {
       throw new Error('network_error');
     };
 
     await expect(
-      createPhotoWithLimit(baseInput('uploader-1'), countPhotosForUploader, failingCreate),
+      createPhotoWithLimit(
+        baseInput('uploader-1'),
+        countPhotosForUploader,
+        failingCreate,
+        findDuplicatePhoto,
+      ),
     ).rejects.toThrow('network_error');
   });
 
   it('never allows more than 20 documents for one uploader under concurrent uploads', async () => {
-    const { documents, countPhotosForUploader, createPhotoDocument } = createFakeDatabase();
+    const { documents, countPhotosForUploader, createPhotoDocument, findDuplicatePhoto } =
+      createFakeDatabase();
     const uploaderId = 'uploader-concurrent';
 
     const uploadAttempts = Array.from({ length: 30 }, (_, index) =>
       createPhotoWithLimit(
-        { ...baseInput(uploaderId), fileId: `file-${index}` },
+        { ...baseInput(uploaderId), fileId: `file-${index}`, fileName: `photo-${index}.jpg` },
         countPhotosForUploader,
         createPhotoDocument,
+        findDuplicatePhoto,
       ),
     );
 
@@ -109,5 +141,37 @@ describe('createPhotoWithLimit', () => {
     expect(uniqueSeqs.size).toBe(20);
     expect(createdResults).toHaveLength(20);
     expect(limitReachedResults).toHaveLength(10);
+  });
+
+  it('returns duplicate without writing when the same uploader already has a matching file', async () => {
+    const { documents, countPhotosForUploader, createPhotoDocument, findDuplicatePhoto } =
+      createFakeDatabase();
+    documents.push({ ...baseInput('uploader-1'), seq: '01' });
+
+    const result = await createPhotoWithLimit(
+      baseInput('uploader-1'),
+      countPhotosForUploader,
+      createPhotoDocument,
+      findDuplicatePhoto,
+    );
+
+    expect(result).toEqual({ status: 'duplicate' });
+    expect(documents).toHaveLength(1);
+  });
+
+  it('allows the same fileName/fileSize for a different uploader', async () => {
+    const { documents, countPhotosForUploader, createPhotoDocument, findDuplicatePhoto } =
+      createFakeDatabase();
+    documents.push({ ...baseInput('uploader-1'), seq: '01' });
+
+    const result = await createPhotoWithLimit(
+      baseInput('uploader-2'),
+      countPhotosForUploader,
+      createPhotoDocument,
+      findDuplicatePhoto,
+    );
+
+    expect(result).toEqual({ status: 'created', seq: '01' });
+    expect(documents).toHaveLength(2);
   });
 });

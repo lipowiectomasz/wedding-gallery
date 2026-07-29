@@ -17,6 +17,23 @@ export function countPhotosForUploaderWith(databases: Databases) {
   };
 }
 
+export function findDuplicatePhotoWith(databases: Databases) {
+  return async (uploaderId: string, fileName: string, fileSize: number): Promise<boolean> => {
+    const result = await databases.listDocuments({
+      databaseId: DATABASE_ID,
+      collectionId: COLLECTION_ID,
+      queries: [
+        Query.equal('uploaderId', uploaderId),
+        Query.equal('fileName', fileName),
+        Query.equal('fileSize', fileSize),
+        Query.limit(1),
+      ],
+      total: true,
+    });
+    return result.total > 0;
+  };
+}
+
 export function createPhotoDocumentWith(databases: Databases) {
   return async (document: PhotoDocument): Promise<void> => {
     try {
