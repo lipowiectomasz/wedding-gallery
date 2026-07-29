@@ -69,12 +69,12 @@ export default function HomePage() {
       </div>
 
       <div className="relative mx-auto mt-auto flex w-full max-w-[350px] flex-col gap-3 px-6.5 pb-8 md:mt-0 md:pb-0">
-        <label className="flex items-start gap-2.5 rounded-2xl bg-accent-bg p-3.5">
+        <label className="flex cursor-pointer items-start gap-2.5 rounded-2xl bg-accent-bg p-3.5">
           <input
             type="checkbox"
             checked={isConsentChecked}
             onChange={(event) => setIsConsentChecked(event.target.checked)}
-            className="mt-0.5 h-5 w-5 flex-none rounded-md border border-accent bg-paper-light"
+            className="mt-0.5 h-5 w-5 flex-none cursor-pointer rounded-md border border-accent bg-paper-light"
           />
           <span className="text-xs leading-relaxed text-[#4a6373]">
             Zgadzam się na publikację moich zdjęć w galerii wesela.{' '}
@@ -108,7 +108,7 @@ export default function HomePage() {
             <button
               type="submit"
               disabled={!isConsentChecked || status === 'sending' || status === 'sent'}
-              className="flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl border border-[#c6cfd5] text-base font-medium text-ink-soft disabled:opacity-50"
+              className="flex h-14 w-full cursor-pointer items-center justify-center gap-2.5 rounded-2xl border border-[#c6cfd5] text-base font-medium text-ink-soft disabled:cursor-not-allowed disabled:opacity-50"
             >
               {status === 'sent' ? 'Link wysłany, sprawdź e-mail' : 'Wyślij link logowania'}
             </button>
@@ -123,7 +123,7 @@ export default function HomePage() {
             type="button"
             onClick={() => setIsEmailFormOpen(true)}
             disabled={!isConsentChecked}
-            className="flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl border border-[#c6cfd5] text-base font-medium text-ink-soft disabled:opacity-50"
+            className="flex h-14 w-full cursor-pointer items-center justify-center gap-2.5 rounded-2xl border border-[#c6cfd5] text-base font-medium text-ink-soft disabled:cursor-not-allowed disabled:opacity-50"
           >
             Zaloguj e-mailem
           </button>

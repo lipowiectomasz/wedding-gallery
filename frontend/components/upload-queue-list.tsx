@@ -49,14 +49,14 @@ export function UploadQueueList({ queue, onRetry, onSkip }: UploadQueueListProps
               <button
                 type="button"
                 onClick={() => onRetry(item.id)}
-                className="rounded-lg px-2 py-1 text-sm font-semibold text-accent-dark"
+                className="cursor-pointer rounded-lg px-2 py-1 text-sm font-semibold text-accent-dark"
               >
                 Ponów
               </button>
               <button
                 type="button"
                 onClick={() => onSkip(item.id)}
-                className="rounded-lg px-2 py-1 text-sm font-medium text-slate"
+                className="cursor-pointer rounded-lg px-2 py-1 text-sm font-medium text-slate"
               >
                 Pomiń
               </button>

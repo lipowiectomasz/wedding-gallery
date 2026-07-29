@@ -40,7 +40,7 @@ export function Lightbox({ photos, activeIndex, onClose, onNavigate }: LightboxP
           type="button"
           onClick={onClose}
           aria-label="Zamknij"
-          className="flex h-10 w-10 items-center justify-center rounded-full text-2xl text-white/80"
+          className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-2xl text-white/80"
         >
           ×
         </button>
@@ -52,7 +52,7 @@ export function Lightbox({ photos, activeIndex, onClose, onNavigate }: LightboxP
             type="button"
             onClick={() => onNavigate(activeIndex - 1)}
             aria-label="Poprzednie zdjęcie"
-            className="absolute left-1 z-10 flex h-10 w-10 items-center justify-center rounded-full text-2xl text-white/80"
+            className="absolute left-1 z-10 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-2xl text-white/80"
           >
             ‹
           </button>
@@ -71,7 +71,7 @@ export function Lightbox({ photos, activeIndex, onClose, onNavigate }: LightboxP
             type="button"
             onClick={() => onNavigate(activeIndex + 1)}
             aria-label="Następne zdjęcie"
-            className="absolute right-1 z-10 flex h-10 w-10 items-center justify-center rounded-full text-2xl text-white/80"
+            className="absolute right-1 z-10 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-2xl text-white/80"
           >
             ›
           </button>

@@ -164,7 +164,7 @@ export default function UploadPage() {
           <button
             type="button"
             onClick={handleLogout}
-            className="flex items-center gap-2"
+            className="flex cursor-pointer items-center gap-2"
             aria-label="Wyloguj się"
           >
             <span className="flex h-7.5 w-7.5 items-center justify-center rounded-full border border-accent-border bg-accent-bg text-xs font-bold text-accent-dark">
@@ -217,7 +217,7 @@ export default function UploadPage() {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isAtLimit || !profile}
-              className="flex flex-col items-center gap-4.5 rounded-3xl border-[1.5px] border-dashed border-[#bfd6e6] bg-gradient-to-b from-white to-[#f6fafd] px-6 pt-9 pb-8.5 shadow-[inset_0_1px_0_#fff] disabled:opacity-60"
+              className="flex cursor-pointer flex-col items-center gap-4.5 rounded-3xl border-[1.5px] border-dashed border-[#bfd6e6] bg-gradient-to-b from-white to-[#f6fafd] px-6 pt-9 pb-8.5 shadow-[inset_0_1px_0_#fff] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <span className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-gold-light via-gold to-gold-dark shadow-[0_14px_30px_-12px_rgba(163,125,52,0.7)]">
                 <span className="relative flex h-11 w-14 items-center justify-center rounded-lg border-3 border-white">
@@ -239,7 +239,7 @@ export default function UploadPage() {
               type="button"
               onClick={() => cameraInputRef.current?.click()}
               disabled={isAtLimit || !profile}
-              className="flex items-center justify-center gap-2 rounded-2xl border border-border-soft py-3 text-sm font-medium text-slate-light disabled:opacity-60 md:hidden"
+              className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-border-soft py-3 text-sm font-medium text-slate-light disabled:cursor-not-allowed disabled:opacity-60 md:hidden"
             >
               Zrób zdjęcie aparatem
             </button>
