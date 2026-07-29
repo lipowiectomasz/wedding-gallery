@@ -35,6 +35,24 @@ export default function GalleryPage() {
     loadGallery();
   }, []);
 
+  function scheduleResume() {
+    if (resumeTimeoutRef.current) {
+      clearTimeout(resumeTimeoutRef.current);
+    }
+    resumeTimeoutRef.current = setTimeout(() => {
+      setIsUserInteracting(false);
+    }, RESUME_DELAY_MS);
+  }
+
+  function handleColumnInteractionChange(isInteracting: boolean) {
+    setIsUserInteracting(isInteracting);
+    if (isInteracting && resumeTimeoutRef.current) {
+      clearTimeout(resumeTimeoutRef.current);
+    } else if (!isInteracting) {
+      scheduleResume();
+    }
+  }
+
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) {
@@ -43,13 +61,7 @@ export default function GalleryPage() {
 
     function handleUserInteraction() {
       setIsUserInteracting(true);
-
-      if (resumeTimeoutRef.current) {
-        clearTimeout(resumeTimeoutRef.current);
-      }
-      resumeTimeoutRef.current = setTimeout(() => {
-        setIsUserInteracting(false);
-      }, RESUME_DELAY_MS);
+      scheduleResume();
     }
 
     container.addEventListener('wheel', handleUserInteraction, { passive: true });
@@ -83,14 +95,14 @@ export default function GalleryPage() {
             <button
               type="button"
               onClick={() => setFilter('all')}
-              className={`rounded-full px-3 py-1 ${filter === 'all' ? 'bg-ink text-paper-light' : 'text-slate-light'}`}
+              className={`cursor-pointer rounded-full px-3 py-1 ${filter === 'all' ? 'bg-ink text-paper-light' : 'text-slate-light'}`}
             >
               Wszystkie
             </button>
             <button
               type="button"
               onClick={() => setFilter('mine')}
-              className={`rounded-full px-3 py-1 ${filter === 'mine' ? 'bg-ink text-paper-light' : 'text-slate-light'}`}
+              className={`cursor-pointer rounded-full px-3 py-1 ${filter === 'mine' ? 'bg-ink text-paper-light' : 'text-slate-light'}`}
             >
               Moje
             </button>
@@ -135,6 +147,7 @@ export default function GalleryPage() {
           <PhotoGrid
             photos={visiblePhotos}
             isScrollPaused={isScrollPaused}
+            onInteractionChange={handleColumnInteractionChange}
             onPhotoClick={(photo) => setActiveIndex(visiblePhotos.indexOf(photo))}
           />
         </div>

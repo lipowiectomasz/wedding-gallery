@@ -24,6 +24,7 @@ describe('PhotoGrid', () => {
       <PhotoGrid
         photos={[photo(), photo({ fileId: 'file-2', uploaderName: 'Anna Nowak' })]}
         isScrollPaused={false}
+        onInteractionChange={vi.fn()}
         onPhotoClick={vi.fn()}
       />,
     );
@@ -33,7 +34,14 @@ describe('PhotoGrid', () => {
   });
 
   it('renders nothing when there are no photos', () => {
-    render(<PhotoGrid photos={[]} isScrollPaused={false} onPhotoClick={vi.fn()} />);
+    render(
+      <PhotoGrid
+        photos={[]}
+        isScrollPaused={false}
+        onInteractionChange={vi.fn()}
+        onPhotoClick={vi.fn()}
+      />,
+    );
 
     expect(screen.queryAllByRole('button')).toHaveLength(0);
   });
@@ -48,6 +56,7 @@ describe('PhotoGrid', () => {
       <PhotoGrid
         photos={[firstPhoto, secondPhoto]}
         isScrollPaused={false}
+        onInteractionChange={vi.fn()}
         onPhotoClick={onPhotoClick}
       />,
     );
