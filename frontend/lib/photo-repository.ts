@@ -12,11 +12,11 @@ export type Photo = {
   createdAt: string;
 };
 
-export async function countPhotosForDevice(deviceId: string): Promise<number> {
+export async function countPhotosForUploader(uploaderId: string): Promise<number> {
   const result = await databases.listDocuments({
     databaseId: DATABASE_ID,
     collectionId: COLLECTION_ID,
-    queries: [Query.equal('deviceId', deviceId), Query.limit(1)],
+    queries: [Query.equal('uploaderId', uploaderId), Query.limit(1)],
   });
 
   return result.total;

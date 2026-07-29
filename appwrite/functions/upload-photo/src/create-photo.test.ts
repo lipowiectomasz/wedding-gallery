@@ -6,13 +6,13 @@ import type { CreatePhotoResult, PhotoDocument } from './types';
 function createFakeDatabase() {
   const documents: PhotoDocument[] = [];
 
-  const countPhotosForDevice = async (deviceId: string): Promise<number> => {
-    return documents.filter((document) => document.deviceId === deviceId).length;
+  const countPhotosForUploader = async (uploaderId: string): Promise<number> => {
+    return documents.filter((document) => document.uploaderId === uploaderId).length;
   };
 
   const createPhotoDocument = async (document: PhotoDocument): Promise<void> => {
     const conflict = documents.some(
-      (existing) => existing.deviceId === document.deviceId && existing.seq === document.seq,
+      (existing) => existing.uploaderId === document.uploaderId && existing.seq === document.seq,
     );
     if (conflict) {
       throw new DocumentConflictError();
@@ -20,25 +20,25 @@ function createFakeDatabase() {
     documents.push(document);
   };
 
-  return { documents, countPhotosForDevice, createPhotoDocument };
+  return { documents, countPhotosForUploader, createPhotoDocument };
 }
 
-function baseInput(deviceId: string): Omit<PhotoDocument, 'seq'> {
+function baseInput(uploaderId: string): Omit<PhotoDocument, 'seq'> {
   return {
-    fileId: `file-${deviceId}`,
-    uploaderId: 'uploader-1',
+    fileId: `file-${uploaderId}`,
+    uploaderId,
     uploaderName: 'Jan Kowalski',
-    deviceId,
+    deviceId: 'device-1',
   };
 }
 
 describe('createPhotoWithLimit', () => {
   it('creates a document with the next available seq', async () => {
-    const { documents, countPhotosForDevice, createPhotoDocument } = createFakeDatabase();
+    const { documents, countPhotosForUploader, createPhotoDocument } = createFakeDatabase();
 
     const result = await createPhotoWithLimit(
-      baseInput('device-1'),
-      countPhotosForDevice,
+      baseInput('uploader-1'),
+      countPhotosForUploader,
       createPhotoDocument,
     );
 
@@ -46,15 +46,15 @@ describe('createPhotoWithLimit', () => {
     expect(documents).toHaveLength(1);
   });
 
-  it('returns limit_reached without writing once the device already has 20 photos', async () => {
-    const { documents, countPhotosForDevice, createPhotoDocument } = createFakeDatabase();
+  it('returns limit_reached without writing once the uploader already has 20 photos', async () => {
+    const { documents, countPhotosForUploader, createPhotoDocument } = createFakeDatabase();
     for (let value = 1; value <= 20; value += 1) {
-      documents.push({ ...baseInput('device-1'), seq: value.toString().padStart(2, '0') });
+      documents.push({ ...baseInput('uploader-1'), seq: value.toString().padStart(2, '0') });
     }
 
     const result = await createPhotoWithLimit(
-      baseInput('device-1'),
-      countPhotosForDevice,
+      baseInput('uploader-1'),
+      countPhotosForUploader,
       createPhotoDocument,
     );
 
@@ -63,12 +63,12 @@ describe('createPhotoWithLimit', () => {
   });
 
   it('retries on a seq conflict and succeeds with the next candidate', async () => {
-    const { documents, countPhotosForDevice, createPhotoDocument } = createFakeDatabase();
-    documents.push({ ...baseInput('device-1'), seq: '01' });
+    const { documents, countPhotosForUploader, createPhotoDocument } = createFakeDatabase();
+    documents.push({ ...baseInput('uploader-1'), seq: '01' });
 
     const result = await createPhotoWithLimit(
-      baseInput('device-1'),
-      countPhotosForDevice,
+      baseInput('uploader-1'),
+      countPhotosForUploader,
       createPhotoDocument,
     );
 
@@ -76,24 +76,24 @@ describe('createPhotoWithLimit', () => {
   });
 
   it('propagates errors that are not seq conflicts', async () => {
-    const { countPhotosForDevice } = createFakeDatabase();
+    const { countPhotosForUploader } = createFakeDatabase();
     const failingCreate = async (): Promise<void> => {
       throw new Error('network_error');
     };
 
     await expect(
-      createPhotoWithLimit(baseInput('device-1'), countPhotosForDevice, failingCreate),
+      createPhotoWithLimit(baseInput('uploader-1'), countPhotosForUploader, failingCreate),
     ).rejects.toThrow('network_error');
   });
 
-  it('never allows more than 20 documents for one device under concurrent uploads', async () => {
-    const { documents, countPhotosForDevice, createPhotoDocument } = createFakeDatabase();
-    const deviceId = 'device-concurrent';
+  it('never allows more than 20 documents for one uploader under concurrent uploads', async () => {
+    const { documents, countPhotosForUploader, createPhotoDocument } = createFakeDatabase();
+    const uploaderId = 'uploader-concurrent';
 
     const uploadAttempts = Array.from({ length: 30 }, (_, index) =>
       createPhotoWithLimit(
-        { ...baseInput(deviceId), fileId: `file-${index}` },
-        countPhotosForDevice,
+        { ...baseInput(uploaderId), fileId: `file-${index}` },
+        countPhotosForUploader,
         createPhotoDocument,
       ),
     );
@@ -102,10 +102,10 @@ describe('createPhotoWithLimit', () => {
 
     const createdResults = results.filter((result) => result.status === 'created');
     const limitReachedResults = results.filter((result) => result.status === 'limit_reached');
-    const deviceDocuments = documents.filter((document) => document.deviceId === deviceId);
-    const uniqueSeqs = new Set(deviceDocuments.map((document) => document.seq));
+    const uploaderDocuments = documents.filter((document) => document.uploaderId === uploaderId);
+    const uniqueSeqs = new Set(uploaderDocuments.map((document) => document.seq));
 
-    expect(deviceDocuments).toHaveLength(20);
+    expect(uploaderDocuments).toHaveLength(20);
     expect(uniqueSeqs.size).toBe(20);
     expect(createdResults).toHaveLength(20);
     expect(limitReachedResults).toHaveLength(10);

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  countPhotosForDevice,
+  countPhotosForUploader,
   getPhotoLightboxUrl,
   getPhotoThumbnailUrl,
   listPhotos,
@@ -47,15 +47,15 @@ describe('listPhotos', () => {
   });
 });
 
-describe('countPhotosForDevice', () => {
+describe('countPhotosForUploader', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('returns the total document count for the given device', async () => {
+  it('returns the total document count for the given uploader', async () => {
     vi.mocked(databases.listDocuments).mockResolvedValue({ total: 5, documents: [] } as never);
 
-    const count = await countPhotosForDevice('device-1');
+    const count = await countPhotosForUploader('user-1');
 
     expect(count).toBe(5);
   });

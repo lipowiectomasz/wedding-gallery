@@ -2,18 +2,18 @@ import { candidateSeqsFrom } from './seq-allocator.ts';
 import { DocumentConflictError, PHOTO_LIMIT } from './types.ts';
 import type { CreatePhotoResult, PhotoDocument } from './types.ts';
 
-export type CountPhotosForDevice = (deviceId: string) => Promise<number>;
+export type CountPhotosForUploader = (uploaderId: string) => Promise<number>;
 export type CreatePhotoDocument = (document: PhotoDocument) => Promise<void>;
 
 const MAX_ATTEMPTS = PHOTO_LIMIT;
 
 export async function createPhotoWithLimit(
   input: Omit<PhotoDocument, 'seq'>,
-  countPhotosForDevice: CountPhotosForDevice,
+  countPhotosForUploader: CountPhotosForUploader,
   createPhotoDocument: CreatePhotoDocument,
 ): Promise<CreatePhotoResult> {
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
-    const currentCount = await countPhotosForDevice(input.deviceId);
+    const currentCount = await countPhotosForUploader(input.uploaderId);
     const candidates = candidateSeqsFrom(currentCount);
 
     if (candidates.length === 0) {

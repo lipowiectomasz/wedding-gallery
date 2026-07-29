@@ -10,7 +10,7 @@ import { getCurrentUser } from '@/lib/current-user';
 import { getDeviceId } from '@/lib/device-id';
 import { logout } from '@/lib/logout';
 import { findProfileByUserId, Profile } from '@/lib/profile-repository';
-import { countPhotosForDevice } from '@/lib/photo-repository';
+import { countPhotosForUploader } from '@/lib/photo-repository';
 import { uploadPhoto } from '@/lib/upload-photo';
 import { validatePhotoFile } from '@/lib/validate-photo-file';
 import {
@@ -49,7 +49,7 @@ export default function UploadPage() {
       }
 
       setProfile(currentProfile);
-      setPhotoCount(await countPhotosForDevice(getDeviceId()));
+      setPhotoCount(await countPhotosForUploader(user.$id));
     }
 
     loadState();
@@ -85,7 +85,7 @@ export default function UploadPage() {
           setQueue((current) =>
             updateQueueItem(current, item.id, {
               status: 'error',
-              errorMessage: 'Osiągnięto limit 20 zdjęć na to urządzenie.',
+              errorMessage: 'Osiągnięto limit 20 zdjęć na to konto.',
             }),
           );
         } else {
@@ -180,7 +180,7 @@ export default function UploadPage() {
         )}
       </div>
 
-      <div className="relative mx-auto flex w-full max-w-[350px] flex-col gap-4.5 px-5">
+      <div className="relative mx-auto flex w-full max-w-[350px] flex-col gap-4.5 px-5 pb-16">
         <UploadProgressBar used={photoCount} limit={PHOTO_LIMIT} />
 
         <input

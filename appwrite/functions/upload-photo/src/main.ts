@@ -1,5 +1,5 @@
 import { Client, Databases } from 'node-appwrite';
-import { countPhotosForDeviceWith, createPhotoDocumentWith } from './appwrite-database.ts';
+import { countPhotosForUploaderWith, createPhotoDocumentWith } from './appwrite-database.ts';
 import { createPhotoWithLimit } from './create-photo.ts';
 import { InvalidRequestError, parseUploadRequest } from './parse-request.ts';
 import { resolveApiEndpoint } from './resolve-endpoint.ts';
@@ -32,15 +32,15 @@ export default async function main({ req, res, log }: FunctionContext) {
 
   const result = await createPhotoWithLimit(
     input,
-    countPhotosForDeviceWith(databases),
+    countPhotosForUploaderWith(databases),
     createPhotoDocumentWith(databases),
   );
 
   if (result.status === 'limit_reached') {
-    log(`photo limit reached for device ${input.deviceId}`);
+    log(`photo limit reached for uploader ${input.uploaderId}`);
     return res.json({ error: 'photo_limit_reached' }, 409);
   }
 
-  log(`photo created for device ${input.deviceId} with seq ${result.seq}`);
+  log(`photo created for uploader ${input.uploaderId} with seq ${result.seq}`);
   return res.json({ seq: result.seq }, 201);
 }

@@ -5,12 +5,12 @@ import type { PhotoDocument } from './types.ts';
 const DATABASE_ID = 'wedding_gallery';
 const COLLECTION_ID = 'photos';
 
-export function countPhotosForDeviceWith(databases: Databases) {
-  return async (deviceId: string): Promise<number> => {
+export function countPhotosForUploaderWith(databases: Databases) {
+  return async (uploaderId: string): Promise<number> => {
     const result = await databases.listDocuments({
       databaseId: DATABASE_ID,
       collectionId: COLLECTION_ID,
-      queries: [Query.equal('deviceId', deviceId), Query.limit(1)],
+      queries: [Query.equal('uploaderId', uploaderId), Query.limit(1)],
       total: true,
     });
     return result.total;
