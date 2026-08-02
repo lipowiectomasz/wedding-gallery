@@ -31,11 +31,11 @@ export default function HomePage() {
     redirectIfLoggedIn();
   }, [router]);
 
-  function handleGoogleLogin() {
+  async function handleGoogleLogin() {
     if (!isConsentChecked) {
       return;
     }
-    startGoogleLogin(buildAuthCallbackUrl(), buildAuthFailureUrl());
+    await startGoogleLogin(buildAuthCallbackUrl(), buildAuthFailureUrl());
   }
 
   async function handleEmailSubmit(event: React.FormEvent) {
