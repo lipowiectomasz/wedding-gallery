@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { FloralDecoration } from '@/components/floral-decoration';
 import { BottomNav } from '@/components/bottom-nav';
 import { PrimaryButton } from '@/components/primary-button';
@@ -9,19 +10,35 @@ import { PhotoGrid } from '@/components/photo-grid';
 import { Lightbox } from '@/components/lightbox';
 import { getCurrentUser } from '@/lib/current-user';
 import { listPhotos, Photo } from '@/lib/photo-repository';
+import { getCookie, setCookie } from '@/lib/cookies';
 
 type Filter = 'all' | 'mine';
 
-const INITIAL_VISIBLE_COUNT = 6;
-const LOAD_MORE_COUNT = 6;
+const DEFAULT_PAGE_SIZE = 6;
+const PAGE_SIZE_OPTIONS = [6, 12, 24] as const;
+const PAGE_SIZE_COOKIE = 'gallery-page-size';
+const PAGE_QUERY_PARAM = 'page';
 
-export default function GalleryPage() {
+function readPageSizeFromCookie(): number {
+  const stored = Number(getCookie(PAGE_SIZE_COOKIE));
+  return PAGE_SIZE_OPTIONS.includes(stored as (typeof PAGE_SIZE_OPTIONS)[number])
+    ? stored
+    : DEFAULT_PAGE_SIZE;
+}
+
+function GalleryPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
+  const [pageSize, setPageSize] = useState(() => readPageSizeFromCookie());
+  const [page, setPage] = useState(() => {
+    const initialPage = Number(searchParams.get(PAGE_QUERY_PARAM));
+    return initialPage > 0 ? initialPage : 1;
+  });
   const [newPhotoIds, setNewPhotoIds] = useState<Set<string>>(new Set());
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -39,8 +56,19 @@ export default function GalleryPage() {
 
   const visiblePhotos =
     filter === 'mine' ? photos.filter((photo) => photo.uploaderId === currentUserId) : photos;
+  const visibleCount = Math.min(page * pageSize, visiblePhotos.length);
   const paginatedPhotos = visiblePhotos.slice(0, visibleCount);
   const hasMore = visibleCount < visiblePhotos.length;
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (page > 1) {
+      url.searchParams.set(PAGE_QUERY_PARAM, String(page));
+    } else {
+      url.searchParams.delete(PAGE_QUERY_PARAM);
+    }
+    router.replace(`${url.pathname}${url.search}`, { scroll: false });
+  }, [page, router]);
 
   useEffect(() => {
     const sentinel = loadMoreRef.current;
@@ -51,9 +79,13 @@ export default function GalleryPage() {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) {
-          setVisibleCount((current) => {
-            const next = Math.min(current + LOAD_MORE_COUNT, visiblePhotos.length);
-            const newlyRevealed = visiblePhotos.slice(current, next).map((photo) => photo.fileId);
+          setPage((current) => {
+            const next = current + 1;
+            const previousCount = Math.min(current * pageSize, visiblePhotos.length);
+            const nextCount = Math.min(next * pageSize, visiblePhotos.length);
+            const newlyRevealed = visiblePhotos
+              .slice(previousCount, nextCount)
+              .map((photo) => photo.fileId);
             setNewPhotoIds(new Set(newlyRevealed));
             return next;
           });
@@ -64,11 +96,18 @@ export default function GalleryPage() {
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasMore, visiblePhotos]);
+  }, [hasMore, pageSize, visiblePhotos]);
 
   function handleFilterChange(nextFilter: Filter) {
     setFilter(nextFilter);
-    setVisibleCount(INITIAL_VISIBLE_COUNT);
+    setPage(1);
+    setNewPhotoIds(new Set());
+  }
+
+  function handlePageSizeChange(nextPageSize: number) {
+    setPageSize(nextPageSize);
+    setCookie(PAGE_SIZE_COOKIE, String(nextPageSize));
+    setPage(1);
     setNewPhotoIds(new Set());
   }
 
@@ -77,24 +116,45 @@ export default function GalleryPage() {
       <FloralDecoration position="top-right" />
       <FloralDecoration position="bottom-left" />
 
-      <div className="relative mx-auto flex w-full max-w-[350px] items-center justify-between px-4 pt-3.5 pb-3">
-        <h1 className="font-heading text-[22px]">Galeria</h1>
+      <div className="relative mx-auto flex w-full max-w-[350px] flex-col gap-2 px-4 pt-3.5 pb-3">
+        <div className="flex items-center justify-between">
+          <h1 className="font-heading text-[22px]">Galeria</h1>
+          {photos.length > 0 && (
+            <div className="flex items-center gap-1.5 rounded-full border border-border-soft bg-paper-light p-0.5 text-xs">
+              <button
+                type="button"
+                onClick={() => handleFilterChange('all')}
+                className={`cursor-pointer rounded-full px-3 py-1 ${filter === 'all' ? 'bg-ink text-paper-light' : 'text-slate-light'}`}
+              >
+                Wszystkie
+              </button>
+              <button
+                type="button"
+                onClick={() => handleFilterChange('mine')}
+                className={`cursor-pointer rounded-full px-3 py-1 ${filter === 'mine' ? 'bg-ink text-paper-light' : 'text-slate-light'}`}
+              >
+                Moje
+              </button>
+            </div>
+          )}
+        </div>
         {photos.length > 0 && (
-          <div className="flex items-center gap-1.5 rounded-full border border-border-soft bg-paper-light p-0.5 text-xs">
-            <button
-              type="button"
-              onClick={() => handleFilterChange('all')}
-              className={`cursor-pointer rounded-full px-3 py-1 ${filter === 'all' ? 'bg-ink text-paper-light' : 'text-slate-light'}`}
-            >
-              Wszystkie
-            </button>
-            <button
-              type="button"
-              onClick={() => handleFilterChange('mine')}
-              className={`cursor-pointer rounded-full px-3 py-1 ${filter === 'mine' ? 'bg-ink text-paper-light' : 'text-slate-light'}`}
-            >
-              Moje
-            </button>
+          <div className="flex items-center gap-1.5 self-end text-xs text-slate-light">
+            <span>Na raz:</span>
+            {PAGE_SIZE_OPTIONS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => handlePageSizeChange(option)}
+                className={`cursor-pointer rounded-full border px-2 py-0.5 ${
+                  pageSize === option
+                    ? 'border-ink bg-ink text-paper-light'
+                    : 'border-border-soft text-slate-light'
+                }`}
+              >
+                {option}
+              </button>
+            ))}
           </div>
         )}
       </div>
@@ -153,5 +213,19 @@ export default function GalleryPage() {
 
       <BottomNav />
     </main>
+  );
+}
+
+export default function GalleryPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="relative flex flex-1 flex-col items-center justify-center">
+          <p className="text-sm text-slate">Wczytywanie...</p>
+        </main>
+      }
+    >
+      <GalleryPageContent />
+    </Suspense>
   );
 }
