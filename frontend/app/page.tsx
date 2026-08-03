@@ -64,7 +64,7 @@ export default function HomePage() {
         <h1 className="font-heading text-5xl leading-tight">Nasze wesele</h1>
         <div className="my-1 h-px w-13 bg-gradient-to-r from-transparent via-gold to-transparent" />
         <p className="max-w-70 text-base leading-relaxed text-slate">
-          Zrób zdjęcie i dodaj je do wspólnej galerii. Zobaczą je wszyscy goście.
+          Wrzuć do 20 zdjęć z dzisiejszego dnia i stwórz z nami wspólną galerię weselną!
         </p>
       </div>
 

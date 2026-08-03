@@ -15,7 +15,7 @@ const karla = Karla({
 });
 
 export const metadata: Metadata = {
-  title: 'Galeria imprezowa',
+  title: 'Galeria weselna',
   description: 'Zrób zdjęcie i dodaj je do wspólnej galerii.',
 };
 
