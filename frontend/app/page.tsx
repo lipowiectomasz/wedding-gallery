@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { FloralDecoration } from '@/components/floral-decoration';
 import { PrimaryButton } from '@/components/primary-button';
 import { buildAuthCallbackUrl, buildAuthFailureUrl } from '@/lib/auth-callback-url';
@@ -78,7 +79,13 @@ export default function HomePage() {
           />
           <span className="text-xs leading-relaxed text-[#4a6373]">
             Zgadzam się na publikację moich zdjęć w galerii wesela.{' '}
-            <span className="text-accent-dark underline">Szczegóły i RODO</span>
+            <Link
+              href="/rodo"
+              onClick={(event) => event.stopPropagation()}
+              className="text-accent-dark underline"
+            >
+              Szczegóły i RODO
+            </Link>
           </span>
         </label>
 

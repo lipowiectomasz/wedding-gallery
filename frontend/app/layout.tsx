@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Cormorant_Garamond, Karla } from 'next/font/google';
 import './globals.css';
 
@@ -17,6 +17,21 @@ const karla = Karla({
 export const metadata: Metadata = {
   title: 'Galeria weselna',
   description: 'Zrób zdjęcie i dodaj je do wspólnej galerii.',
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+    },
+  },
+};
+
+export const viewport: Viewport = {
+  colorScheme: 'light',
+  themeColor: '#f4f1ea',
 };
 
 export default function RootLayout({
