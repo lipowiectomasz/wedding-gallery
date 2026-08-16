@@ -22,7 +22,6 @@ import {
 } from '@/lib/upload-queue';
 
 const PHOTO_LIMIT = 20;
-const MAX_FILES_PER_SELECTION = 3;
 
 export default function UploadPage() {
   const router = useRouter();
@@ -137,7 +136,7 @@ export default function UploadPage() {
     }
 
     const remainingSlots = PHOTO_LIMIT - photoCount;
-    const selectedFiles = files.slice(0, Math.min(MAX_FILES_PER_SELECTION, remainingSlots));
+    const selectedFiles = files.slice(0, remainingSlots);
 
     const oversizedFile = selectedFiles.map(validatePhotoFile).find((error) => error !== null);
     if (oversizedFile) {
