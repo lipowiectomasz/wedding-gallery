@@ -4,6 +4,7 @@ import { getPhotoThumbnailUrl } from '@/lib/photo-repository';
 
 type PhotoGridProps = {
   photos: Photo[];
+  totalCount: number;
   newPhotoIds: Set<string>;
   onPhotoClick: (photo: Photo) => void;
 };
@@ -37,11 +38,11 @@ function useIsDesktop(): boolean {
   return isDesktop;
 }
 
-export function PhotoGrid({ photos, newPhotoIds, onPhotoClick }: PhotoGridProps) {
+export function PhotoGrid({ photos, totalCount, newPhotoIds, onPhotoClick }: PhotoGridProps) {
   const isDesktop = useIsDesktop();
   const columnCount = isDesktop
     ? DESKTOP_COLUMN_COUNT
-    : photos.length < THREE_COLUMN_MIN_PHOTOS
+    : totalCount < THREE_COLUMN_MIN_PHOTOS
       ? 2
       : 3;
   const columns = splitIntoColumns(photos, columnCount);

@@ -23,6 +23,7 @@ describe('PhotoGrid', () => {
     render(
       <PhotoGrid
         photos={[photo(), photo({ fileId: 'file-2', uploaderName: 'Anna Nowak' })]}
+        totalCount={2}
         newPhotoIds={new Set()}
         onPhotoClick={vi.fn()}
       />,
@@ -34,7 +35,7 @@ describe('PhotoGrid', () => {
   });
 
   it('renders nothing when there are no photos', () => {
-    render(<PhotoGrid photos={[]} newPhotoIds={new Set()} onPhotoClick={vi.fn()} />);
+    render(<PhotoGrid photos={[]} totalCount={0} newPhotoIds={new Set()} onPhotoClick={vi.fn()} />);
 
     expect(screen.queryAllByRole('button')).toHaveLength(0);
   });
@@ -48,6 +49,7 @@ describe('PhotoGrid', () => {
     render(
       <PhotoGrid
         photos={[firstPhoto, secondPhoto]}
+        totalCount={2}
         newPhotoIds={new Set()}
         onPhotoClick={onPhotoClick}
       />,
@@ -65,6 +67,7 @@ describe('PhotoGrid', () => {
     render(
       <PhotoGrid
         photos={[firstPhoto, secondPhoto]}
+        totalCount={2}
         newPhotoIds={new Set(['file-2'])}
         onPhotoClick={vi.fn()}
       />,

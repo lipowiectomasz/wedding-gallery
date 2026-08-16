@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { Photo } from '@/lib/photo-repository';
 import { getPhotoLightboxUrl } from '@/lib/photo-repository';
 
@@ -9,10 +9,13 @@ type LightboxProps = {
   onNavigate: (index: number) => void;
 };
 
+const SWIPE_THRESHOLD_PX = 50;
+
 export function Lightbox({ photos, activeIndex, onClose, onNavigate }: LightboxProps) {
   const photo = photos[activeIndex];
   const hasPrevious = activeIndex > 0;
   const hasNext = activeIndex < photos.length - 1;
+  const touchStartX = useRef<number | null>(null);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -28,6 +31,27 @@ export function Lightbox({ photos, activeIndex, onClose, onNavigate }: LightboxP
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeIndex, hasPrevious, hasNext, onClose, onNavigate]);
+
+  function handleTouchStart(event: React.TouchEvent) {
+    touchStartX.current = event.touches[0]?.clientX ?? null;
+  }
+
+  function handleTouchEnd(event: React.TouchEvent) {
+    const startX = touchStartX.current;
+    touchStartX.current = null;
+    if (startX === null) {
+      return;
+    }
+
+    const endX = event.changedTouches[0]?.clientX ?? startX;
+    const deltaX = endX - startX;
+
+    if (deltaX <= -SWIPE_THRESHOLD_PX && hasNext) {
+      onNavigate(activeIndex + 1);
+    } else if (deltaX >= SWIPE_THRESHOLD_PX && hasPrevious) {
+      onNavigate(activeIndex - 1);
+    }
+  }
 
   if (!photo) {
     return null;
@@ -46,7 +70,11 @@ export function Lightbox({ photos, activeIndex, onClose, onNavigate }: LightboxP
         </button>
       </div>
 
-      <div className="relative flex flex-1 items-center justify-center px-2">
+      <div
+        className="relative flex flex-1 items-center justify-center px-2"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {hasPrevious && (
           <button
             type="button"

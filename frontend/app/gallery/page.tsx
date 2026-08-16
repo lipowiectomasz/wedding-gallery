@@ -111,6 +111,14 @@ function GalleryPageContent() {
     setNewPhotoIds(new Set());
   }
 
+  function handleLightboxNavigate(nextIndex: number) {
+    const requiredPage = Math.floor(nextIndex / pageSize) + 1;
+    if (requiredPage > page) {
+      setPage(requiredPage);
+    }
+    setActiveIndex(nextIndex);
+  }
+
   return (
     <main className="relative flex flex-1 flex-col overflow-hidden">
       <FloralDecoration position="top-right" />
@@ -195,8 +203,9 @@ function GalleryPageContent() {
         <div ref={scrollContainerRef} className="relative min-h-0 flex-1 overflow-y-auto pb-16">
           <PhotoGrid
             photos={paginatedPhotos}
+            totalCount={visiblePhotos.length}
             newPhotoIds={newPhotoIds}
-            onPhotoClick={(photo) => setActiveIndex(paginatedPhotos.indexOf(photo))}
+            onPhotoClick={(photo) => setActiveIndex(visiblePhotos.indexOf(photo))}
           />
           {hasMore && <div ref={loadMoreRef} className="h-1" aria-hidden="true" />}
         </div>
@@ -204,10 +213,10 @@ function GalleryPageContent() {
 
       {activeIndex !== null && (
         <Lightbox
-          photos={paginatedPhotos}
+          photos={visiblePhotos}
           activeIndex={activeIndex}
           onClose={() => setActiveIndex(null)}
-          onNavigate={setActiveIndex}
+          onNavigate={handleLightboxNavigate}
         />
       )}
 

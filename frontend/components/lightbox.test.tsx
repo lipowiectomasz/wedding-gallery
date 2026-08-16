@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { Lightbox } from './lightbox';
@@ -93,5 +93,38 @@ describe('Lightbox', () => {
     );
 
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it('navigates to the next photo on a leftward swipe', () => {
+    const onNavigate = vi.fn();
+    render(<Lightbox photos={photos} activeIndex={0} onClose={vi.fn()} onNavigate={onNavigate} />);
+
+    const surface = screen.getByRole('img', { name: 'Zdjęcie od Jan Kowalski' }).parentElement!;
+    fireEvent.touchStart(surface, { touches: [{ clientX: 200 }] });
+    fireEvent.touchEnd(surface, { changedTouches: [{ clientX: 100 }] });
+
+    expect(onNavigate).toHaveBeenCalledWith(1);
+  });
+
+  it('navigates to the previous photo on a rightward swipe', () => {
+    const onNavigate = vi.fn();
+    render(<Lightbox photos={photos} activeIndex={1} onClose={vi.fn()} onNavigate={onNavigate} />);
+
+    const surface = screen.getByRole('img', { name: 'Zdjęcie od Anna Nowak' }).parentElement!;
+    fireEvent.touchStart(surface, { touches: [{ clientX: 100 }] });
+    fireEvent.touchEnd(surface, { changedTouches: [{ clientX: 200 }] });
+
+    expect(onNavigate).toHaveBeenCalledWith(0);
+  });
+
+  it('ignores a swipe shorter than the threshold', () => {
+    const onNavigate = vi.fn();
+    render(<Lightbox photos={photos} activeIndex={0} onClose={vi.fn()} onNavigate={onNavigate} />);
+
+    const surface = screen.getByRole('img', { name: 'Zdjęcie od Jan Kowalski' }).parentElement!;
+    fireEvent.touchStart(surface, { touches: [{ clientX: 200 }] });
+    fireEvent.touchEnd(surface, { changedTouches: [{ clientX: 180 }] });
+
+    expect(onNavigate).not.toHaveBeenCalled();
   });
 });
