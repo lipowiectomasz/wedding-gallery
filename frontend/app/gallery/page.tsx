@@ -15,10 +15,10 @@ import { getCookie, setCookie } from '@/lib/cookies';
 type Filter = 'all' | 'mine';
 
 const DEFAULT_PAGE_SIZE = 6;
+const INITIAL_VISIBLE_COUNT = 30;
 const PAGE_SIZE_OPTIONS = [6, 12, 24] as const;
 const PAGE_SIZE_COOKIE = 'gallery-page-size';
 const PAGE_QUERY_PARAM = 'page';
-const SCROLL_POSITION_STORAGE_KEY = 'gallery-scroll-position';
 
 function readPageSizeFromCookie(): number {
   const stored = Number(getCookie(PAGE_SIZE_COOKIE));
@@ -40,10 +40,11 @@ function GalleryPageContent() {
   const [pageSize, setPageSize] = useState(() => readPageSizeFromCookie());
   const [page, setPage] = useState(() => {
     const initialPage = Number(searchParams.get(PAGE_QUERY_PARAM));
-    return initialPage > 0 ? initialPage : 1;
+    const initialPageSize = readPageSizeFromCookie();
+    const minimumPage = Math.max(1, Math.ceil(INITIAL_VISIBLE_COUNT / initialPageSize));
+    return Math.max(initialPage, minimumPage);
   });
   const [newPhotoIds, setNewPhotoIds] = useState<Set<string>>(new Set());
-  const [hasRestoredScroll, setHasRestoredScroll] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -77,44 +78,6 @@ function GalleryPageContent() {
   const paginatedPhotos = visiblePhotos.slice(0, visibleCount);
   const hasMoreLoaded = visibleCount < visiblePhotos.length;
   const hasMore = hasMoreLoaded || nextCursor !== null;
-  const isCatchingUpToInitialPage = !isLoading && page * pageSize > photos.length && nextCursor !== null;
-
-  useEffect(() => {
-    if (!isCatchingUpToInitialPage) {
-      return;
-    }
-    const timeoutId = setTimeout(fetchNextServerPage, 0);
-    return () => clearTimeout(timeoutId);
-  }, [isCatchingUpToInitialPage, fetchNextServerPage]);
-
-  useEffect(() => {
-    if (isLoading || hasRestoredScroll || isCatchingUpToInitialPage) {
-      return;
-    }
-
-    const timeoutId = setTimeout(() => {
-      const stored = Number(sessionStorage.getItem(SCROLL_POSITION_STORAGE_KEY));
-      if (stored > 0 && scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTop = stored;
-      }
-      setHasRestoredScroll(true);
-    }, 0);
-    return () => clearTimeout(timeoutId);
-  }, [isLoading, hasRestoredScroll, isCatchingUpToInitialPage]);
-
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) {
-      return;
-    }
-
-    function handleScroll() {
-      sessionStorage.setItem(SCROLL_POSITION_STORAGE_KEY, String(container!.scrollTop));
-    }
-
-    container.addEventListener('scroll', handleScroll, { passive: true });
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, [hasRestoredScroll]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
