@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FloralDecoration } from '@/components/floral-decoration';
 import { BottomNav } from '@/components/bottom-nav';
@@ -30,6 +30,8 @@ function GalleryPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -45,20 +47,34 @@ function GalleryPageContent() {
 
   useEffect(() => {
     async function loadGallery() {
-      const [user, allPhotos] = await Promise.all([getCurrentUser(), listPhotos()]);
+      const [user, firstPage] = await Promise.all([getCurrentUser(), listPhotos()]);
       setCurrentUserId(user?.$id ?? null);
-      setPhotos(allPhotos);
+      setPhotos(firstPage.photos);
+      setNextCursor(firstPage.nextCursor);
       setIsLoading(false);
     }
 
     loadGallery();
   }, []);
 
+  const fetchNextServerPage = useCallback(async () => {
+    if (!nextCursor || isFetchingMore) {
+      return;
+    }
+
+    setIsFetchingMore(true);
+    const nextPage = await listPhotos(nextCursor);
+    setPhotos((current) => [...current, ...nextPage.photos]);
+    setNextCursor(nextPage.nextCursor);
+    setIsFetchingMore(false);
+  }, [nextCursor, isFetchingMore]);
+
   const visiblePhotos =
     filter === 'mine' ? photos.filter((photo) => photo.uploaderId === currentUserId) : photos;
   const visibleCount = Math.min(page * pageSize, visiblePhotos.length);
   const paginatedPhotos = visiblePhotos.slice(0, visibleCount);
-  const hasMore = visibleCount < visiblePhotos.length;
+  const hasMoreLoaded = visibleCount < visiblePhotos.length;
+  const hasMore = hasMoreLoaded || nextCursor !== null;
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -78,25 +94,32 @@ function GalleryPageContent() {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting) {
-          setPage((current) => {
-            const next = current + 1;
-            const previousCount = Math.min(current * pageSize, visiblePhotos.length);
-            const nextCount = Math.min(next * pageSize, visiblePhotos.length);
-            const newlyRevealed = visiblePhotos
-              .slice(previousCount, nextCount)
-              .map((photo) => photo.fileId);
-            setNewPhotoIds(new Set(newlyRevealed));
-            return next;
-          });
+        if (!entries[0]?.isIntersecting) {
+          return;
         }
+
+        if (!hasMoreLoaded) {
+          fetchNextServerPage();
+          return;
+        }
+
+        setPage((current) => {
+          const next = current + 1;
+          const previousCount = Math.min(current * pageSize, visiblePhotos.length);
+          const nextCount = Math.min(next * pageSize, visiblePhotos.length);
+          const newlyRevealed = visiblePhotos
+            .slice(previousCount, nextCount)
+            .map((photo) => photo.fileId);
+          setNewPhotoIds(new Set(newlyRevealed));
+          return next;
+        });
       },
       { root: scrollContainerRef.current, rootMargin: '200px' },
     );
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasMore, pageSize, visiblePhotos]);
+  }, [hasMore, hasMoreLoaded, pageSize, visiblePhotos, fetchNextServerPage]);
 
   function handleFilterChange(nextFilter: Filter) {
     setFilter(nextFilter);
@@ -115,6 +138,9 @@ function GalleryPageContent() {
     const requiredPage = Math.floor(nextIndex / pageSize) + 1;
     if (requiredPage > page) {
       setPage(requiredPage);
+    }
+    if (nextIndex >= visiblePhotos.length - 1 && nextCursor) {
+      fetchNextServerPage();
     }
     setActiveIndex(nextIndex);
   }

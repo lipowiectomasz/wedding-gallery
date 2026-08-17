@@ -21,20 +21,23 @@ describe('listPhotos', () => {
     vi.clearAllMocks();
   });
 
+  function document(fileId: string) {
+    return {
+      fileId,
+      uploaderId: 'user-1',
+      uploaderName: 'Jan Kowalski',
+      $id: `doc-${fileId}`,
+      $createdAt: '2026-01-01T00:00:00.000+00:00',
+    };
+  }
+
   it('maps documents to photos ordered by the query', async () => {
     vi.mocked(databases.listDocuments).mockResolvedValue({
       total: 1,
-      documents: [
-        {
-          fileId: 'file-1',
-          uploaderId: 'user-1',
-          uploaderName: 'Jan Kowalski',
-          $createdAt: '2026-01-01T00:00:00.000+00:00',
-        },
-      ],
+      documents: [document('file-1')],
     } as never);
 
-    const photos = await listPhotos();
+    const { photos, nextCursor } = await listPhotos();
 
     expect(photos).toEqual([
       {
@@ -44,6 +47,35 @@ describe('listPhotos', () => {
         createdAt: '2026-01-01T00:00:00.000+00:00',
       },
     ]);
+    expect(nextCursor).toBeNull();
+  });
+
+  it('returns a cursor when a full page is returned', async () => {
+    const fullPage = Array.from({ length: 100 }, (_, index) => document(`file-${index}`));
+    vi.mocked(databases.listDocuments).mockResolvedValue({
+      total: 100,
+      documents: fullPage,
+    } as never);
+
+    const { nextCursor } = await listPhotos();
+
+    expect(nextCursor).toBe('doc-file-99');
+  });
+
+  it('passes the cursor through as a cursorAfter query', async () => {
+    vi.mocked(databases.listDocuments).mockResolvedValue({
+      total: 0,
+      documents: [],
+    } as never);
+
+    await listPhotos('doc-file-99');
+
+    const call = vi.mocked(databases.listDocuments).mock.calls[0][0] as unknown as {
+      queries: string[];
+    };
+    expect(call.queries).toEqual(
+      expect.arrayContaining([expect.stringContaining('doc-file-99')]),
+    );
   });
 });
 
