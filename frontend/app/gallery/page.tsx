@@ -27,6 +27,10 @@ function readPageSizeFromCookie(): number {
     : DEFAULT_PAGE_SIZE;
 }
 
+function minimumPageFor(pageSize: number): number {
+  return Math.max(1, Math.ceil(INITIAL_VISIBLE_COUNT / pageSize));
+}
+
 function GalleryPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -41,8 +45,7 @@ function GalleryPageContent() {
   const [page, setPage] = useState(() => {
     const initialPage = Number(searchParams.get(PAGE_QUERY_PARAM));
     const initialPageSize = readPageSizeFromCookie();
-    const minimumPage = Math.max(1, Math.ceil(INITIAL_VISIBLE_COUNT / initialPageSize));
-    return Math.max(initialPage, minimumPage);
+    return Math.max(initialPage, minimumPageFor(initialPageSize));
   });
   const [newPhotoIds, setNewPhotoIds] = useState<Set<string>>(new Set());
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -126,14 +129,14 @@ function GalleryPageContent() {
 
   function handleFilterChange(nextFilter: Filter) {
     setFilter(nextFilter);
-    setPage(1);
+    setPage(minimumPageFor(pageSize));
     setNewPhotoIds(new Set());
   }
 
   function handlePageSizeChange(nextPageSize: number) {
     setPageSize(nextPageSize);
     setCookie(PAGE_SIZE_COOKIE, String(nextPageSize));
-    setPage(1);
+    setPage(minimumPageFor(nextPageSize));
     setNewPhotoIds(new Set());
   }
 
